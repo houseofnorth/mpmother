@@ -88,7 +88,8 @@ static void enterUser(uint8_t k, bool fromStall) {
   stopMotor(k);
   Knob &n = knobs[k];
   n.state = USER;
-  n.lastHandMove =  n.handRef = potPosition(k);
+  n.lastHandMove = millis();
+  n.handRef = potPosition(k);
   n.handMoved = false;
   n.enteredUserFromStall = fromStall;
 }
@@ -105,7 +106,8 @@ static void whileUser(uint8_t k, uint32_t now) {
   reportPosition(k);
   if (abs(pos - n.handRef) > 3) {
     n.handRef = pos;
-    n.lastHandMove =    n.handMoved = true;
+    n.lastHandMove = now;
+    n.handMoved = true;
   }
   if (now - n.lastHandMove > USER_RELEASE_MS) {
     // A "stall" with no movement at all afterwards is probably not a hand - it is a dead motor.
@@ -184,7 +186,7 @@ static void whileFault(uint8_t k, uint32_t now) {
 void setupKnobs() {
   uint32_t now = millis();
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {
-        knobs[k].stoppedAt = now;
+    knobs[k].stoppedAt = now;
     stopMotor(k);
   }
 }
@@ -275,7 +277,7 @@ void calibrateKnobs(void (*keepAlive)(), int which) {
                   settings.reverse[k], ok ? "ok" : "range too small, kept old values - check wiring");
     stopMotor(k);
     knobs[k].state = IDLE;
-      }
+  }
   saveSettings();
   sendAllPositions();
 }

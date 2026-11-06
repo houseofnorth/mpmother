@@ -8,7 +8,7 @@
 static void printStatus() {
   Serial.printf("MPMOTHER  out ch %d  drive ch %d  feedback %s  DIN %s\n", settings.outChannel,
                 settings.driveChannel, settings.followFeedback ? "on" : "off", settings.dinOut ? "on" : "off");
-  Serial.printf("speed %d\ndrivers %s%s\n", driversAwake() ? "awake" : "asleep",
+  Serial.printf("speed %d\ndrivers %s%s\n", settings.maxSpeed, driversAwake() ? "awake" : "asleep",
                 driverFaultLatched() ? "  FAULT (latched)" : driverFault() ? "  FAULT" : "");
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {
     Serial.printf("CH%d  out cc %3d  drive cc %3d  pos %4d (A %4d B %4d)  cal %4d-%4d  rev %d  %-6s %s%s\n",
