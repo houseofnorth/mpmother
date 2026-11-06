@@ -32,6 +32,7 @@
     CC 1  = screensaver delay in 10 s steps (0 = off, 127 = 21 min)
   Settings are stored in EEPROM.
 */
+#include <Arduino.h>
 #include <EEPROM.h>
 
 const uint8_t NCH = 4;
