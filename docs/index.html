@@ -78,10 +78,12 @@
 
   .notice { padding: 16px 0; border-bottom: 1px solid var(--red); color: var(--red); }
 
-  /* ---------- system strip ---------- */
-  .system { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--faint); }
+  /* ---------- system strip ----------
+     Part of the title bar: a closed row between the top rule and the knob panel's rule,
+     divided by rules of the same weight that run from one to the other. */
+  .system { display: grid; grid-template-columns: repeat(4, 1fr); }
   .system > div { padding: 14px 0 12px; display: flex; flex-direction: column; gap: 6px; }
-  .system > div + div { padding-left: 18px; border-left: 1px solid var(--faint); }
+  .system > div + div { padding-left: 18px; border-left: 1px solid var(--ink); }
   .system .value { font-size: var(--fs-reading); letter-spacing: var(--tr-reading); }
   .lamp { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--faint); margin-right: 10px;
           vertical-align: 2px; }
@@ -96,7 +98,7 @@
      SPACE / TEXTURE over MOVEMENT / SHADOW. Each quarter: name + value left, plot right.
      The plot's 0-127 scale is the Move fader; its handle is the head of the line. */
   #view-monitor { flex: 1; display: flex; flex-direction: column; }
-  #monitor { flex: 1; display: flex; flex-direction: column; border-top: 1px solid var(--ink); margin-top: 20px; }
+  #monitor { flex: 1; display: flex; flex-direction: column; border-top: 1px solid var(--ink); }
   #knobs { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
            grid-template-rows: repeat(2, minmax(var(--quarter-min), 1fr)); }
   .knob { display: grid; grid-template-columns: 170px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
@@ -228,7 +230,6 @@
      Name + mode left, value right, plot (with its fader) underneath. */
   @media (max-width: 700px), (max-height: 560px) {
     :root { --quarter-min: 130px; }
-    #monitor { margin-top: 12px; }
     .knob { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
             grid-template-areas: "ident" "plot"; gap: 6px; padding: 0 10px 10px 0; }
     .knob:nth-child(even) { padding: 0 0 10px 10px; }
