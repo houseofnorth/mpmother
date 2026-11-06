@@ -47,7 +47,7 @@
   .hidden { display: none !important; }
 
   /* ---------- type roles ---------- */
-  .label, h2, .key, .bank-title, .rowhead, .colhead, .param .p-label, .maint .head, .maint .knobname small,
+  .label, h2, .bank-title, .rowhead, .colhead, .param .p-label, .maint .head, .maint .knobname small,
   .knob .cc-label, footer {
     font-size: var(--fs-caption); letter-spacing: var(--tr-caption); color: var(--dim); font-weight: normal; }
   .num, .knob .cc, .param .p-value, .maint .val, .system .value { font-variant-numeric: tabular-nums; }
@@ -140,12 +140,6 @@
   .fader:focus-visible { box-shadow: inset 1px 0 0 var(--dim); }
   .warn { color: var(--amber); }
   .msg { min-height: 18px; }
-
-  /* plot key */
-  .key { display: flex; flex-wrap: wrap; gap: 6px 26px; padding: 12px 0 0; }
-  .key i { display: inline-block; width: 22px; height: 0; border-top: 2px solid var(--ink); vertical-align: 3px; margin-right: 8px; }
-  .key i.target { border-top: 1px dashed var(--ink); }
-  .key i.band { height: 8px; border: 0; background: var(--ink); vertical-align: 0; }
 
   /* ---------- settings: hardware-editor parameter banks ---------- */
   .banks { display: grid; grid-template-columns: 2fr 1fr; gap: 0 28px; }
@@ -243,10 +237,6 @@
     .knob .mode { grid-area: mode; justify-self: start; font-size: var(--fs-micro); margin-top: 4px; }
     .knob .mode.user { padding: 2px 5px 0; }
   }
-  /* short screens (phones in landscape): no plot key */
-  @media (max-height: 560px) {
-    #monitor .key { display: none; }
-  }
 
   @media (max-width: 900px) {
     :root { --gutter: 16px; }
@@ -307,11 +297,6 @@
 <!-- The four knobs, 2x2 like the front panel, filling the screen -->
 <section id="monitor">
   <div id="knobs"></div>
-  <div class="key">
-    <span><i></i>Position</span>
-    <span><i class="target"></i>Target</span>
-    <span><i class="band"></i>Touch</span>
-  </div>
 </section>
 
 </div>
