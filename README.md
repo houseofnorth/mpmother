@@ -29,6 +29,9 @@ The main page shows the four knobs live (position, where the motor is heading, h
 **Settings** (top right) has all settings, calibration, pot health and faults.
 It works while Ableton is running.
 
+**Demo** (top right): with the controller connected, the knobs make random moves until you
+press Demo again. Without a controller it shows a simulated one.
+
 ## Status LED
 
 | Colour          | Meaning |
