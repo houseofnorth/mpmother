@@ -1,9 +1,9 @@
 // midi_io.h - USB + DIN MIDI, and the SysEx link to the web config tool.
 //
-// CC in/out (defaults):
-//   knobs send            channel 1, CC 20-23
-//   Ableton drives knobs  channel 2, CC 20-23   (clips, automation, LFOs)
-//   mapping feedback      channel 1, CC 20-23   (knobs jump to the right place when a set loads)
+// CC in/out. Every knob has its own channel + CC for each of these. Defaults:
+//   knobs send            ch 1, CC 20-23
+//   Ableton drives knobs  ch 2, CC 20-23   (clips, automation, LFOs)
+//   mapping feedback      ch 1, CC 20-23   (the knob's own send ch + CC echoed back by Live)
 //
 // SysEx protocol for the config tool: see PROTOCOL.md
 #pragma once

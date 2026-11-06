@@ -3,20 +3,22 @@
 Four motorised pots as a MIDI controller. Teensy 4.1, two Pololu DRV8833 drivers,
 ALPS RK16812MG099 dual-gang motorised pots. House of North.
 
-| Knob | Name     | Sends (default) | Driven by (default) |
-|------|----------|-----------------|---------------------|
-| 1    | SPACE    | ch 1, CC 20     | ch 2, CC 20         |
-| 2    | TEXTURE  | ch 1, CC 21     | ch 2, CC 21         |
-| 3    | MOVEMENT | ch 1, CC 22     | ch 2, CC 22         |
-| 4    | SHADOW   | ch 1, CC 23     | ch 2, CC 23         |
+| Knob | Name     | Sends (default) | Moved by (default) |
+|------|----------|-----------------|--------------------|
+| 1    | SPACE    | ch 1, CC 20     | ch 2, CC 20        |
+| 2    | TEXTURE  | ch 1, CC 21     | ch 2, CC 21        |
+| 3    | MOVEMENT | ch 1, CC 22     | ch 2, CC 22        |
+| 4    | SHADOW   | ch 1, CC 23     | ch 2, CC 23        |
+
+Every knob has its own channel and CC for both, set in the config tool.
 
 ## Using it with Ableton Live
 
-- **Map a knob:** MIDI-map a parameter to the knob as usual (ch 1).
+- **Map a knob:** MIDI-map a parameter to the knob as usual.
 - **Knobs follow the set:** in Live's MIDI preferences, turn on *Remote* for the MPMOTHER
   **output**. Live then sends mapping feedback and the knobs jump to the right place.
-- **Let Ableton drive the knobs:** send CC 20–23 on channel 2 to MPMOTHER from a MIDI track
-  (clips, automation, Max for Live LFOs). The knobs move and send their position on ch 1.
+- **Let Ableton drive the knobs:** send ch 2, CC 20–23 to MPMOTHER from a MIDI track
+  (clips, automation, Max for Live LFOs). The knobs move and send their position.
 - A hand on a knob always wins.
 
 ## Config tool

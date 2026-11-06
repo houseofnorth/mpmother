@@ -4,7 +4,7 @@
 #include "pots.h"
 #include "motors.h"
 
-const uint8_t FIRMWARE_MAJOR = 1, FIRMWARE_MINOR = 0;
+const uint8_t FIRMWARE_MAJOR = 1, FIRMWARE_MINOR = 1;
 
 // ---- SysEx framing: F0 7D 4D 50 <command> <data...> F7 ----
 // 7D = "non-commercial" manufacturer ID, 4D 50 = "MP"
@@ -48,9 +48,9 @@ static void sendSysex(uint8_t reply, const uint8_t *data, uint8_t length) {
 
 // ---------- CC ----------
 void sendKnobCC(uint8_t k, uint8_t value) {
-  usbMIDI.sendControlChange(settings.outCC[k], value, settings.outChannel);
+  usbMIDI.sendControlChange(settings.outCC[k], value, settings.outChannel[k]);
   if (settings.dinOut) {
-    Serial1.write(0xB0 | (settings.outChannel - 1));
+    Serial1.write(0xB0 | (settings.outChannel[k] - 1));
     Serial1.write(settings.outCC[k] & 0x7F);
     Serial1.write(value & 0x7F);
   }
@@ -60,25 +60,30 @@ void sendKnobCC(uint8_t k, uint8_t value) {
 static void onControlChange(uint8_t channel, uint8_t control, uint8_t value) {
   lastIn = millis();
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {
-    bool isFeedback = channel == settings.outChannel && control == settings.outCC[k];
-    bool isDrive    = channel == settings.driveChannel && control == settings.driveCC[k];
+    // channel is 1-16 here, so a drive channel of 0 (off) never matches
+    bool isFeedback = channel == settings.outChannel[k] && control == settings.outCC[k];
+    bool isDrive    = channel == settings.driveChannel[k] && control == settings.driveCC[k];
     if (isFeedback && settings.followFeedback) moveKnobFromMidi(k, value, true);  // may be our own echo
     else if (isDrive && !isFeedback)           moveKnobFromMidi(k, value, false);
   }
 }
 
 // ---------- SysEx: settings ----------
-const uint8_t SETTINGS_BYTES = 12 + 5 * NUM_KNOBS;
+// Editable part: per knob 4 bytes (out ch, out CC, drive ch, drive CC), then flags, then speed.
+const uint8_t EDITABLE_BYTES = 4 * NUM_KNOBS + 2;
+const uint8_t SETTINGS_BYTES = EDITABLE_BYTES + 5 * NUM_KNOBS;
 
 void sendSettingsToTool() {
   uint8_t d[SETTINGS_BYTES];
-  d[0] = settings.outChannel;
-  d[1] = settings.driveChannel;
-  for (uint8_t k = 0; k < NUM_KNOBS; k++) { d[2 + k] = settings.outCC[k]; d[6 + k] = settings.driveCC[k]; }
-  d[10] = (settings.followFeedback ? 1 : 0) | (settings.dinOut ? 2 : 0);
-  d[11] = settings.maxSpeed;
+  for (uint8_t k = 0; k < NUM_KNOBS; k++) {
+    uint8_t *m = &d[4 * k];
+    m[0] = settings.outChannel[k];   m[1] = settings.outCC[k];
+    m[2] = settings.driveChannel[k]; m[3] = settings.driveCC[k];
+  }
+  d[4 * NUM_KNOBS]     = (settings.followFeedback ? 1 : 0) | (settings.dinOut ? 2 : 0);
+  d[4 * NUM_KNOBS + 1] = settings.maxSpeed;
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {  // calibration, read-only for the tool
-    uint8_t *c = &d[12 + 5 * k];
+    uint8_t *c = &d[EDITABLE_BYTES + 5 * k];
     c[0] = hi7(settings.calLow[k]);  c[1] = lo7(settings.calLow[k]);
     c[2] = hi7(settings.calHigh[k]); c[3] = lo7(settings.calHigh[k]);
     c[4] = settings.reverse[k];
@@ -87,13 +92,17 @@ void sendSettingsToTool() {
 }
 
 static void applySettingsFromTool(const uint8_t *d, uint8_t length) {
-  if (length < 12) return;
-  settings.outChannel   = constrain(d[0], 1, 16);
-  settings.driveChannel = constrain(d[1], 0, 16);
-  for (uint8_t k = 0; k < NUM_KNOBS; k++) { settings.outCC[k] = d[2 + k]; settings.driveCC[k] = d[6 + k]; }
-  settings.followFeedback = d[10] & 1;
-  settings.dinOut         = d[10] & 2;
-  settings.maxSpeed       = d[11];
+  if (length < EDITABLE_BYTES) return;
+  for (uint8_t k = 0; k < NUM_KNOBS; k++) {
+    const uint8_t *m = &d[4 * k];
+    settings.outChannel[k]   = constrain(m[0], 1, 16);
+    settings.outCC[k]        = m[1];
+    settings.driveChannel[k] = constrain(m[2], 0, 16);
+    settings.driveCC[k]      = m[3];
+  }
+  settings.followFeedback = d[4 * NUM_KNOBS] & 1;
+  settings.dinOut         = d[4 * NUM_KNOBS] & 2;
+  settings.maxSpeed       = d[4 * NUM_KNOBS + 1];
   saveSettings();  // calibration is only changed by calibrating
 }
 

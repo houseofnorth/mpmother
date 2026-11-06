@@ -5,14 +5,18 @@
 #include "motors.h"
 #include "midi_io.h"
 
+// Channel always before CC: "ch 1 cc 20".
 static void printStatus() {
-  Serial.printf("MPMOTHER  out ch %d  drive ch %d  feedback %s  DIN %s\n", settings.outChannel,
-                settings.driveChannel, settings.followFeedback ? "on" : "off", settings.dinOut ? "on" : "off");
-  Serial.printf("speed %d\ndrivers %s%s\n", settings.maxSpeed, driversAwake() ? "awake" : "asleep",
+  Serial.printf("MPMOTHER  feedback %s  DIN %s  speed %d\n", settings.followFeedback ? "on" : "off",
+                settings.dinOut ? "on" : "off", settings.maxSpeed);
+  Serial.printf("drivers %s%s\n", driversAwake() ? "awake" : "asleep",
                 driverFaultLatched() ? "  FAULT (latched)" : driverFault() ? "  FAULT" : "");
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {
-    Serial.printf("CH%d  out cc %3d  drive cc %3d  pos %4d (A %4d B %4d)  cal %4d-%4d  rev %d  %-6s %s%s\n",
-                  k + 1, settings.outCC[k], settings.driveCC[k], potPosition(k), wiperA(k), wiperB(k),
+    char drive[24];
+    if (settings.driveChannel[k]) snprintf(drive, sizeof(drive), "ch %d cc %d", settings.driveChannel[k], settings.driveCC[k]);
+    else                          snprintf(drive, sizeof(drive), "off");
+    Serial.printf("knob %d  sends ch %d cc %d  moved by %s  pos %4d (A %4d B %4d)  cal %4d-%4d  rev %d  %-6s %s%s\n",
+                  k + 1, settings.outChannel[k], settings.outCC[k], drive, potPosition(k), wiperA(k), wiperB(k),
                   settings.calLow[k], settings.calHigh[k], settings.reverse[k], knobStateName(k),
                   potWorn(k) ? "worn " : "", knobFaultName(k));
   }
@@ -21,11 +25,11 @@ static void printStatus() {
 static void printHelp() {
   Serial.println(
     "status                      settings and live state\n"
-    "outch <1-16>                channel the knobs send on\n"
-    "drivech <0-16>              channel Ableton drives the knobs on (0 = off)\n"
+    "outch <knob 1-4> <1-16>     channel a knob sends on\n"
     "outcc <knob 1-4> <0-127>    CC a knob sends\n"
+    "drivech <knob 1-4> <0-16>   channel that moves a knob (0 = off)\n"
     "drivecc <knob 1-4> <0-127>  CC that moves a knob\n"
-    "feedback on|off             follow Ableton's mapping feedback on the out channel\n"
+    "feedback on|off             follow Ableton's mapping feedback on each knob's send ch + CC\n"
     "din on|off                  also send on the DIN socket\n"
     "speed <0-127>               motor top speed\n"
     "calibrate [knob 1-4]        find end stops and motor direction (knobs move!)\n"
@@ -42,13 +46,14 @@ static void handleLine(char *line, void (*keepAlive)()) {
   char *a = strtok(nullptr, " \t\r");
   char *b = strtok(nullptr, " \t\r");
   int knob = a ? atoi(a) - 1 : -1;
+  bool knobAndValue = b && knob >= 0 && knob < NUM_KNOBS;
   bool changed = true;
 
-  if      (!strcmp(cmd, "status"))         { printStatus(); changed = false; }
-  else if (!strcmp(cmd, "outch") && a)     settings.outChannel = constrain(atoi(a), 1, 16);
-  else if (!strcmp(cmd, "drivech") && a)   settings.driveChannel = constrain(atoi(a), 0, 16);
-  else if (!strcmp(cmd, "outcc") && b && knob >= 0 && knob < NUM_KNOBS)   settings.outCC[knob] = constrain(atoi(b), 0, 127);
-  else if (!strcmp(cmd, "drivecc") && b && knob >= 0 && knob < NUM_KNOBS) settings.driveCC[knob] = constrain(atoi(b), 0, 127);
+  if      (!strcmp(cmd, "status"))                  { printStatus(); changed = false; }
+  else if (!strcmp(cmd, "outch") && knobAndValue)   settings.outChannel[knob] = constrain(atoi(b), 1, 16);
+  else if (!strcmp(cmd, "outcc") && knobAndValue)   settings.outCC[knob] = constrain(atoi(b), 0, 127);
+  else if (!strcmp(cmd, "drivech") && knobAndValue) settings.driveChannel[knob] = constrain(atoi(b), 0, 16);
+  else if (!strcmp(cmd, "drivecc") && knobAndValue) settings.driveCC[knob] = constrain(atoi(b), 0, 127);
   else if (!strcmp(cmd, "feedback") && a)  settings.followFeedback = isOn(a);
   else if (!strcmp(cmd, "din") && a)       settings.dinOut = isOn(a);
   else if (!strcmp(cmd, "speed") && a)     settings.maxSpeed = constrain(atoi(a), 0, 127);

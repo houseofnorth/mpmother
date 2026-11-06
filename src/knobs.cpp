@@ -273,7 +273,7 @@ void calibrateKnobs(void (*keepAlive)(), int which) {
     int high = readPotSlow(k);
     bool ok = high - low > 200;
     if (ok) { settings.calLow[k] = low + 8; settings.calHigh[k] = high - 8; }
-    Serial.printf("calibrate CH%d: low %d  high %d  reverse %d  %s\n", k + 1, low, high,
+    Serial.printf("calibrate knob %d: low %d  high %d  reverse %d  %s\n", k + 1, low, high,
                   settings.reverse[k], ok ? "ok" : "range too small, kept old values - check wiring");
     stopMotor(k);
     knobs[k].state = IDLE;
