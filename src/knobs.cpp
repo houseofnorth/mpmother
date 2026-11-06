@@ -15,7 +15,6 @@ const uint32_t MOVE_TIMEOUT_MS  = 2500;  // hard stop for any single move
 const uint32_t SETTLE_MS        = 80;    // let the pot settle after the motor stops
 const uint32_t USER_RELEASE_MS  = 1500;  // no movement this long = the hand let go
 const uint32_t ECHO_MS          = 300;   // ignore Ableton echoing our own CC back
-const uint32_t SAVER_PAUSE_MIN  = 1000, SAVER_PAUSE_MAX = 5000;
 const uint8_t  STRIKES_TO_FAULT = 3;     // this many bad moves in a row = FAULT
 const uint32_t FAULT_RETRY_MS   = 60000; // direction / not-moving faults try again after this
                                          // (a person fighting the knob can look like a fault)
@@ -30,14 +29,12 @@ struct Knob {
   bool      resting = false;            // restPos is valid
   int       restPos = 0;
   uint32_t  stoppedAt = 0;
-  uint32_t  lastActivity = 0;           // for the screensaver
   uint32_t  lastHandMove = 0;
   int       handRef = 0;
   bool      handMoved = false;          // did the pot move at all during this USER period?
   bool      enteredUserFromStall = false;
   int       lastCC = -1;
   uint32_t  lastSentAt = 0;
-  uint32_t  saverPauseUntil = 0;
   uint8_t   wrongWayStrikes = 0, notMovingStrikes = 0;
   uint32_t  faultAt = 0;
 };
@@ -91,8 +88,7 @@ static void enterUser(uint8_t k, bool fromStall) {
   stopMotor(k);
   Knob &n = knobs[k];
   n.state = USER;
-  n.lastHandMove = n.lastActivity = millis();
-  n.handRef = potPosition(k);
+  n.lastHandMove =  n.handRef = potPosition(k);
   n.handMoved = false;
   n.enteredUserFromStall = fromStall;
 }
@@ -109,8 +105,7 @@ static void whileUser(uint8_t k, uint32_t now) {
   reportPosition(k);
   if (abs(pos - n.handRef) > 3) {
     n.handRef = pos;
-    n.lastHandMove = n.lastActivity = now;
-    n.handMoved = true;
+    n.lastHandMove =    n.handMoved = true;
   }
   if (now - n.lastHandMove > USER_RELEASE_MS) {
     // A "stall" with no movement at all afterwards is probably not a hand - it is a dead motor.
@@ -131,15 +126,13 @@ static void whileDriving(uint8_t k, uint32_t now) {
   if (abs(distance) <= DEADBAND) {  // arrived
     stopMotor(k);
     moveFinished(k);
-    if (n.state == SAVER) { reportPosition(k); n.saverPauseUntil = now + random(SAVER_PAUSE_MIN, SAVER_PAUSE_MAX); }
-    else n.state = IDLE;
+    n.state = IDLE;
     return;
   }
 
   int duty = constrain((int)(abs(distance) * KP), MIN_DUTY, n.topSpeed);
   int speed = distance > 0 ? duty : -duty;
   setMotor(k, speed);
-  if (n.state == SAVER) reportPosition(k);
 
   // Is a hand fighting the motor?
   if (now - n.moveStart > SPINUP_MS) {
@@ -156,8 +149,7 @@ static void whileDriving(uint8_t k, uint32_t now) {
 
   if (now - n.moveStart > MOVE_TIMEOUT_MS) {         // safety stop
     stopMotor(k);
-    if (n.state == SAVER) n.saverPauseUntil = now + SAVER_PAUSE_MAX;
-    else n.state = IDLE;
+    n.state = IDLE;
   }
 }
 
@@ -169,19 +161,7 @@ static void whileResting(uint8_t k, uint32_t now) {
     if (now - n.stoppedAt > SETTLE_MS) { n.restPos = pos; n.resting = true; }
     return;
   }
-  if (abs(pos - n.restPos) > TOUCH_MOVE) { enterUser(k, false); return; }  // turned by hand
-
-  if (n.state == SAVER && (int32_t)(now - n.saverPauseUntil) >= 0) {
-    int speed = speedToDuty(settings.saverSpeed);
-    startMove(k, random(settings.calLow[k], settings.calHigh[k] + 1), speed, SAVER);
-    return;
-  }
-
-  bool saverOn = settings.saverDelaySec > 0;
-  if (n.state == IDLE && saverOn && now - n.lastActivity > (uint32_t)settings.saverDelaySec * 1000UL) {
-    n.state = SAVER;
-    n.saverPauseUntil = now;
-  }
+  if (abs(pos - n.restPos) > TOUCH_MOVE) enterUser(k, false);  // turned by hand
 }
 
 static void whileFault(uint8_t k, uint32_t now) {
@@ -195,7 +175,6 @@ static void whileFault(uint8_t k, uint32_t now) {
     n.state = IDLE;
     n.fault = FAULT_NONE;
     n.wrongWayStrikes = n.notMovingStrikes = STRIKES_TO_FAULT - 1;
-    n.lastActivity = now;
     n.restPos = potPosition(k);
     n.resting = true;
   }
@@ -205,8 +184,7 @@ static void whileFault(uint8_t k, uint32_t now) {
 void setupKnobs() {
   uint32_t now = millis();
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {
-    knobs[k].lastActivity = now;
-    knobs[k].stoppedAt = now;
+        knobs[k].stoppedAt = now;
     stopMotor(k);
   }
 }
@@ -230,7 +208,6 @@ void moveKnobFromMidi(uint8_t k, uint8_t value, bool isEcho) {
   if (n.state == USER || n.state == FAULT) return;  // a hand always wins
   if (isEcho && now - n.lastSentAt < ECHO_MS && abs((int)value - n.lastCC) <= 1) return;
 
-  n.lastActivity = now;
   n.lastCC = value;
   int target = ccToPosition(k, value);
   if (abs(target - potPosition(k)) <= DEADBAND) {
@@ -250,7 +227,7 @@ void clearKnobFaults() {
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {
     Knob &n = knobs[k];
     n.wrongWayStrikes = n.notMovingStrikes = 0;
-    if (n.state == FAULT) { n.state = IDLE; n.fault = FAULT_NONE; n.lastActivity = millis(); }
+    if (n.state == FAULT) { n.state = IDLE; n.fault = FAULT_NONE; }
   }
 }
 
@@ -297,8 +274,7 @@ void calibrateKnobs(void (*keepAlive)()) {
                   settings.reverse[k], ok ? "ok" : "range too small, kept old values - check wiring");
     stopMotor(k);
     knobs[k].state = IDLE;
-    knobs[k].lastActivity = millis();
-  }
+      }
   saveSettings();
   sendAllPositions();
 }
@@ -309,16 +285,11 @@ int       knobTarget(uint8_t k) { return knobs[k].target; }
 int       knobLastCC(uint8_t k) { return knobs[k].lastCC; }
 
 const char *knobStateName(uint8_t k) {
-  static const char *names[] = { "idle", "follow", "user", "saver", "fault" };
+  static const char *names[] = { "idle", "follow", "user", "fault" };
   return names[knobs[k].state];
 }
 
 const char *knobFaultName(uint8_t k) {
   static const char *names[] = { "", "pot gangs disagree", "wrong direction", "motor not moving" };
   return names[knobs[k].fault];
-}
-
-bool anyKnobInSaver() {
-  for (uint8_t k = 0; k < NUM_KNOBS; k++) if (knobs[k].state == SAVER) return true;
-  return false;
 }

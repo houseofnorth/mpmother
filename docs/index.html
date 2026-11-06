@@ -204,10 +204,6 @@
       <button class="toggle" id="dinOut" data-on="0">Off</button></div>
     <div class="field"><label for="maxSpeed">Motor speed<span class="hint">0 – 127</span></label>
       <input type="number" id="maxSpeed" min="0" max="127"></div>
-    <div class="field"><label for="saverSpeed">Screensaver speed<span class="hint">0 – 127</span></label>
-      <input type="number" id="saverSpeed" min="0" max="127"></div>
-    <div class="field"><label for="saverDelay">Screensaver after<span class="hint">seconds without activity, 0 switches it off</span></label>
-      <input type="number" id="saverDelay" min="0" max="16383"></div>
   </div>
   <div>
     <table>
@@ -244,8 +240,8 @@ const CMD = { hello: 0x01, getSettings: 0x02, setSettings: 0x03, calibrate: 0x04
 const REPLY = { hello: 0x41, settings: 0x42, status: 0x43 };
 
 const KNOB_NAMES = ["SPACE", "TEXTURE", "MOVEMENT", "SHADOW"];
-const MODE_TEXT  = ["Resting", "Moving to Ableton", "Hand on knob", "Screensaver", "Fault"];
-const MODE_CLASS = ["", "", "user", "", "fault"];
+const MODE_TEXT  = ["Resting", "Moving to Ableton", "Hand on knob", "Fault"];
+const MODE_CLASS = ["", "", "user", "fault"];
 const FAULT_TEXT = ["", "Pot halves disagree — motor off", "Turns the wrong way — calibrate", "Motor not moving — check cable"];
 const NO_TARGET = 16383;
 const HISTORY_MS = 10000;
@@ -357,8 +353,8 @@ function drawPlot(k) {
   // band along the bottom: white while a hand is on the knob, red while faulted
   for (let i = 1; i < points.length; i++) {
     const mode = points[i].mode;
-    if (mode !== 2 && mode !== 4) continue;
-    g.fillStyle = mode === 4 ? RED : INK;
+    if (mode !== 2 && mode !== 3) continue;
+    g.fillStyle = mode === 3 ? RED : INK;
     const x0 = Math.max(pad.left, x(points[i - 1].t)), x1 = x(points[i].t);
     g.fillRect(x0, h - 7, x1 - x0 + 0.5, 4);
   }
@@ -376,7 +372,7 @@ function drawPlot(k) {
   g.setLineDash([]);
 
   // position
-  g.strokeStyle = points[points.length - 1].mode === 4 ? RED : INK;
+  g.strokeStyle = points[points.length - 1].mode === 3 ? RED : INK;
   g.lineWidth = 1.6; g.lineJoin = "round";
   g.beginPath();
   points.forEach((p, i) => i ? g.lineTo(x(p.t), y(p.pos)) : g.moveTo(x(p.t), y(p.pos)));
@@ -443,10 +439,10 @@ function parseSettings(d) {
   const s = {
     outChannel: d[0], driveChannel: d[1], outCC: d.slice(2, 6), driveCC: d.slice(6, 10),
     followFeedback: !!(d[10] & 1), dinOut: !!(d[10] & 2),
-    maxSpeed: d[11], saverSpeed: d[12], saverDelay: join14(d[13], d[14]), cal: [],
+    maxSpeed: d[11], cal: [],
   };
   for (let k = 0; k < 4; k++) {
-    const c = d.slice(15 + 5 * k, 20 + 5 * k);
+    const c = d.slice(12 + 5 * k, 17 + 5 * k);
     s.cal.push({ calLow: join14(c[0], c[1]), calHigh: join14(c[2], c[3]), reverse: !!c[4] });
   }
   return s;
@@ -465,8 +461,6 @@ function showSettings(s) {
   setToggle("followFeedback", s.followFeedback);
   setToggle("dinOut", s.dinOut);
   $("maxSpeed").value = s.maxSpeed;
-  $("saverSpeed").value = s.saverSpeed;
-  $("saverDelay").value = s.saverDelay;
   $("ccTable").innerHTML = KNOB_NAMES.map((name, k) => `
     <tr><td>${name}</td>
       <td><input type="number" min="0" max="127" id="outCC${k}" value="${s.outCC[k]}"></td>
@@ -493,8 +487,6 @@ function settingsFromForm() {
     ...[0, 1, 2, 3].map(k => clampInput(`driveCC${k}`, 0, 127)),
     ($("followFeedback").dataset.on === "1" ? 1 : 0) | ($("dinOut").dataset.on === "1" ? 2 : 0),
     clampInput("maxSpeed", 0, 127),
-    clampInput("saverSpeed", 0, 127),
-    ...split14(clampInput("saverDelay", 0, 16383)),
   ];
 }
 
@@ -631,7 +623,7 @@ async function start() {
 class DemoController {
   constructor(reply) {
     this.reply = reply;
-    this.settings = [1, 2, 20, 21, 22, 23, 20, 21, 22, 23, 3, 127, 50, 0, 30];
+    this.settings = [1, 2, 20, 21, 22, 23, 20, 21, 22, 23, 3, 127];
     for (let k = 0; k < 4; k++) this.settings.push(0, 20, 7, 100, 0);
     this.knobs = [0, 1, 2, 3].map(k => ({ pos: 200 + k * 180, target: null, mode: 0, cc: 0, until: 0 }));
     this.knobs[2].wear = 34;
@@ -650,9 +642,9 @@ class DemoController {
     const cmd = m[4], data = m.slice(5, -1);
     if (cmd === CMD.hello) this.sysex(REPLY.hello, [1, 0, 4]);
     if (cmd === CMD.getSettings || cmd === CMD.factoryReset) this.sysex(REPLY.settings, this.settings);
-    if (cmd === CMD.setSettings) { this.settings.splice(0, 15, ...data); this.sysex(REPLY.settings, this.settings); }
+    if (cmd === CMD.setSettings) { this.settings.splice(0, 12, ...data); this.sysex(REPLY.settings, this.settings); }
     if (cmd === CMD.monitor) this.monitorUntil = performance.now() + 5000;
-    if (cmd === CMD.clearFaults) this.knobs.forEach(n => { if (n.mode === 4) n.mode = 0; });
+    if (cmd === CMD.clearFaults) this.knobs.forEach(n => { if (n.mode === 3) n.mode = 0; });
   }
   tick() {
     const t = performance.now();

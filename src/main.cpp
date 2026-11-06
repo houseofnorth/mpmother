@@ -5,7 +5,6 @@
 //   - Ableton can move the knobs: on the drive channel (clips, automation, LFOs), and via
 //     mapping feedback on the out channel (enable "Remote" on the MPMOTHER output in Live).
 //   - A hand on a knob always wins: the motor lets go and the knob sends CC.
-//   - Screensaver: after a while without activity the knobs drift on their own and send CC.
 //   - Safety: watchdog, motor timeouts, driver fault handling, worn-pot detection,
 //     drivers asleep when nothing moves, everything off at start-up.
 //
@@ -14,7 +13,7 @@
 //   settings      user settings in EEPROM
 //   pots          reading both gangs of each pot, wear check
 //   motors        DRV8833 drivers: speed, sleep, faults
-//   knobs         what each knob is doing (idle / follow / user / saver / fault)
+//   knobs         what each knob is doing (idle / follow / user / fault)
 //   midi_io       CC in/out and the SysEx link to the web config tool
 //   led           status LED colours
 //   console       text commands over USB serial
@@ -43,10 +42,6 @@ void setup() {
   setupPots();
   setupKnobs();
   setupMidi();
-
-  uint32_t seed = micros();
-  for (uint8_t k = 0; k < NUM_KNOBS; k++) seed = (seed << 3) ^ analogRead(PIN_WIPER_A[k]);
-  randomSeed(seed);
 
   WDT_timings_t timing;
   timing.trigger = 0.5;

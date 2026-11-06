@@ -31,7 +31,6 @@ It works while Ableton is running.
 |-----------------|---------|
 | dim green       | ready |
 | blue flicker    | MIDI in or out |
-| slow purple     | screensaver |
 | amber blink     | a pot is getting worn |
 | red blink       | fault, motors held off |
 | solid red       | driver kept faulting, needs *Clear faults* or a power cycle |

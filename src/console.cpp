@@ -8,10 +8,7 @@
 static void printStatus() {
   Serial.printf("MPMOTHER  out ch %d  drive ch %d  feedback %s  DIN %s\n", settings.outChannel,
                 settings.driveChannel, settings.followFeedback ? "on" : "off", settings.dinOut ? "on" : "off");
-  Serial.printf("speed %d  saver speed %d  screensaver %s", settings.maxSpeed, settings.saverSpeed,
-                settings.saverDelaySec ? "" : "off");
-  if (settings.saverDelaySec) Serial.printf("after %d s", settings.saverDelaySec);
-  Serial.printf("\ndrivers %s%s\n", driversAwake() ? "awake" : "asleep",
+  Serial.printf("speed %d\ndrivers %s%s\n", driversAwake() ? "awake" : "asleep",
                 driverFaultLatched() ? "  FAULT (latched)" : driverFault() ? "  FAULT" : "");
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {
     Serial.printf("CH%d  out cc %3d  drive cc %3d  pos %4d (A %4d B %4d)  cal %4d-%4d  rev %d  %-6s %s%s\n",
@@ -31,8 +28,6 @@ static void printHelp() {
     "feedback on|off             follow Ableton's mapping feedback on the out channel\n"
     "din on|off                  also send on the DIN socket\n"
     "speed <0-127>               motor top speed\n"
-    "saverspeed <0-127>          screensaver motor speed\n"
-    "saver <seconds>             screensaver delay, 0 = off\n"
     "calibrate                   find end stops and motor direction (knobs move!)\n"
     "clear                       clear faults\n"
     "send                        send all knob positions once\n"
@@ -57,8 +52,6 @@ static void handleLine(char *line, void (*keepAlive)()) {
   else if (!strcmp(cmd, "feedback") && a)  settings.followFeedback = isOn(a);
   else if (!strcmp(cmd, "din") && a)       settings.dinOut = isOn(a);
   else if (!strcmp(cmd, "speed") && a)     settings.maxSpeed = constrain(atoi(a), 0, 127);
-  else if (!strcmp(cmd, "saverspeed") && a) settings.saverSpeed = constrain(atoi(a), 0, 127);
-  else if (!strcmp(cmd, "saver") && a)     settings.saverDelaySec = constrain(atoi(a), 0, 16383);
   else if (!strcmp(cmd, "defaults"))       factoryDefaults();
   else if (!strcmp(cmd, "calibrate"))      { Serial.println("calibrating - hands off the knobs"); calibrateKnobs(keepAlive); }
   else if (!strcmp(cmd, "clear"))          { clearKnobFaults(); clearDriverFault(); changed = false; }

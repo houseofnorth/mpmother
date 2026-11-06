@@ -15,8 +15,6 @@ struct Settings {
 
   // Motion
   uint8_t  maxSpeed;            // 0-127  top motor speed when following Ableton
-  uint8_t  saverSpeed;          // 0-127  top motor speed in screensaver
-  uint16_t saverDelaySec;       // seconds without activity before the screensaver starts, 0 = off
 
   // Calibration (filled in by "calibrate")
   int16_t  calLow[NUM_KNOBS];   // pot reading at the low end stop

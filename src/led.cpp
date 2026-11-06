@@ -18,13 +18,6 @@ static void setColor(uint8_t r, uint8_t g, uint8_t b) {
 
 static bool blink(uint32_t periodMs) { return (millis() % periodMs) < periodMs / 2; }
 
-// 0..255..0 over periodMs, for slow "breathing"
-static uint8_t breathe(uint32_t periodMs) {
-  uint32_t t = millis() % periodMs;
-  uint32_t half = periodMs / 2;
-  return t < half ? t * 255 / half : (periodMs - t) * 255 / half;
-}
-
 void setupLed(bool afterWatchdogReset) {
   pinMode(PIN_LED_RED, OUTPUT);
   pinMode(PIN_LED_GREEN, OUTPUT);
@@ -53,9 +46,5 @@ void updateLed() {
   else if (driverFault() || anyFault)           setColor(blink(500) ? BRIGHT : 0, 0, 0);
   else if (anyWorn && blink(1500))              setColor(BRIGHT, BRIGHT / 3, 0);
   else if (midiInRecently(30) || midiOutRecently(30)) setColor(0, 0, BRIGHT);
-  else if (anyKnobInSaver()) {
-    uint8_t level = breathe(4000) / 3;
-    setColor(level, 0, level);
-  }
   else                                          setColor(0, DIM, 0);
 }

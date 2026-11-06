@@ -4,7 +4,7 @@
 Settings settings;
 
 // Change this whenever the Settings layout changes, so old EEPROM content is ignored.
-const uint32_t SETTINGS_MAGIC = 0x4D500101;  // "MP" v1.1
+const uint32_t SETTINGS_MAGIC = 0x4D500102;  // "MP" v1.2
 
 void factoryDefaults() {
   settings.magic          = SETTINGS_MAGIC;
@@ -13,8 +13,6 @@ void factoryDefaults() {
   settings.followFeedback = true;
   settings.dinOut         = true;
   settings.maxSpeed       = 127;
-  settings.saverSpeed     = 50;
-  settings.saverDelaySec  = 300;  // 5 minutes
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {
     settings.outCC[k]   = 20 + k;  // CC 20-23
     settings.driveCC[k] = 20 + k;

@@ -35,7 +35,6 @@ static bool     wantCalibration = false;
 // ---------- helpers ----------
 static uint8_t hi7(int v) { return (v >> 7) & 0x7F; }
 static uint8_t lo7(int v) { return v & 0x7F; }
-static int     join14(uint8_t hi, uint8_t lo) { return (hi << 7) | lo; }
 
 static void sendSysex(uint8_t reply, const uint8_t *data, uint8_t length) {
   uint8_t msg[64];
@@ -69,7 +68,7 @@ static void onControlChange(uint8_t channel, uint8_t control, uint8_t value) {
 }
 
 // ---------- SysEx: settings ----------
-const uint8_t SETTINGS_BYTES = 15 + 5 * NUM_KNOBS;
+const uint8_t SETTINGS_BYTES = 12 + 5 * NUM_KNOBS;
 
 void sendSettingsToTool() {
   uint8_t d[SETTINGS_BYTES];
@@ -78,11 +77,8 @@ void sendSettingsToTool() {
   for (uint8_t k = 0; k < NUM_KNOBS; k++) { d[2 + k] = settings.outCC[k]; d[6 + k] = settings.driveCC[k]; }
   d[10] = (settings.followFeedback ? 1 : 0) | (settings.dinOut ? 2 : 0);
   d[11] = settings.maxSpeed;
-  d[12] = settings.saverSpeed;
-  d[13] = hi7(settings.saverDelaySec);
-  d[14] = lo7(settings.saverDelaySec);
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {  // calibration, read-only for the tool
-    uint8_t *c = &d[15 + 5 * k];
+    uint8_t *c = &d[12 + 5 * k];
     c[0] = hi7(settings.calLow[k]);  c[1] = lo7(settings.calLow[k]);
     c[2] = hi7(settings.calHigh[k]); c[3] = lo7(settings.calHigh[k]);
     c[4] = settings.reverse[k];
@@ -91,15 +87,13 @@ void sendSettingsToTool() {
 }
 
 static void applySettingsFromTool(const uint8_t *d, uint8_t length) {
-  if (length < 15) return;
+  if (length < 12) return;
   settings.outChannel   = constrain(d[0], 1, 16);
   settings.driveChannel = constrain(d[1], 0, 16);
   for (uint8_t k = 0; k < NUM_KNOBS; k++) { settings.outCC[k] = d[2 + k]; settings.driveCC[k] = d[6 + k]; }
   settings.followFeedback = d[10] & 1;
   settings.dinOut         = d[10] & 2;
   settings.maxSpeed       = d[11];
-  settings.saverSpeed     = d[12];
-  settings.saverDelaySec  = join14(d[13], d[14]);
   saveSettings();  // calibration is only changed by calibrating
 }
 
