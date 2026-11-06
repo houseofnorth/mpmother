@@ -288,11 +288,11 @@ int       knobTarget(uint8_t k) { return knobs[k].target; }
 int       knobLastCC(uint8_t k) { return knobs[k].lastCC; }
 
 const char *knobStateName(uint8_t k) {
-  static const char *names[] = { "idle", "follow", "user", "fault" };
+  static const char *names[] = { "idle", "moving", "touch", "fault" };
   return names[knobs[k].state];
 }
 
 const char *knobFaultName(uint8_t k) {
-  static const char *names[] = { "", "pot gangs disagree", "wrong direction", "motor not moving" };
+  static const char *names[] = { "", "wiper mismatch", "motor reversed", "motor stalled" };
   return names[knobs[k].fault];
 }

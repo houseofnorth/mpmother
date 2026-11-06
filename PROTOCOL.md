@@ -26,13 +26,13 @@ Every message: `F0 7D 4D 50 <command> <data…> F7`
 
 | Byte  | Meaning |
 |-------|---------|
-| 0–15  | per knob, 4 bytes: out ch 1–16, out CC, drive ch 0–16 (0 = off), drive CC |
+| 0–15  | per knob, 4 bytes: MIDI Out ch 1–16, Out CC, MIDI In ch 0–16 (0 = off), In CC |
 | 16    | bit 0 follow mapping feedback, bit 1 DIN out |
 | 17    | motor speed 0–127 |
 | 18–37 | per knob, 5 bytes: cal low (14-bit), cal high (14-bit), reverse. Read-only. |
 
-Out ch + CC: what the knob sends (and the mapping feedback it follows).
-Drive ch + CC: what moves the knob.
+MIDI Out ch + CC: what the knob sends (and the mapping feedback it follows).
+MIDI In ch + CC: what moves the knob (called drive in the firmware).
 
 **`43` status** (42 bytes)
 
@@ -42,6 +42,6 @@ Drive ch + CC: what moves the knob.
 | 1    | bit 0 MIDI in, bit 1 MIDI out (in the last 50 ms) |
 | 2–41 | per knob, 10 bytes: state, fault, flags, CC value, wiper A (14-bit), wiper B (14-bit), target (14-bit, 16383 = none) |
 
-State: 0 idle, 1 follow, 2 user, 3 fault.
-Fault: 0 none, 1 pot gangs disagree, 2 wrong direction, 3 motor not moving.
-Flags: bit 0 pot worn, bit 1 CC value valid, bit 2 motor running.
+State: 0 idle, 1 moving, 2 touch, 3 fault.
+Fault: 0 none, 1 wiper mismatch, 2 motor reversed, 3 motor stalled.
+Flags: bit 0 pot wear, bit 1 CC value valid, bit 2 motor running.

@@ -9,28 +9,28 @@
 static void printStatus() {
   Serial.printf("MPMOTHER  feedback %s  DIN %s  speed %d\n", settings.followFeedback ? "on" : "off",
                 settings.dinOut ? "on" : "off", settings.maxSpeed);
-  Serial.printf("drivers %s%s\n", driversAwake() ? "awake" : "asleep",
+  Serial.printf("motors %s%s\n", driversAwake() ? "active" : "standby",
                 driverFaultLatched() ? "  FAULT (latched)" : driverFault() ? "  FAULT" : "");
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {
     char drive[24];
     if (settings.driveChannel[k]) snprintf(drive, sizeof(drive), "ch %d cc %d", settings.driveChannel[k], settings.driveCC[k]);
     else                          snprintf(drive, sizeof(drive), "off");
-    Serial.printf("knob %d  sends ch %d cc %d  moved by %s  pos %4d (A %4d B %4d)  cal %4d-%4d  rev %d  %-6s %s%s\n",
+    Serial.printf("knob %d  out ch %d cc %d  in %s  pos %4d (A %4d B %4d)  cal %4d-%4d  rev %d  %-6s %s%s\n",
                   k + 1, settings.outChannel[k], settings.outCC[k], drive, potPosition(k), wiperA(k), wiperB(k),
                   settings.calLow[k], settings.calHigh[k], settings.reverse[k], knobStateName(k),
-                  potWorn(k) ? "worn " : "", knobFaultName(k));
+                  potWorn(k) ? "wear " : "", knobFaultName(k));
   }
 }
 
 static void printHelp() {
   Serial.println(
     "status                      settings and live state\n"
-    "outch <knob 1-4> <1-16>     channel a knob sends on\n"
-    "outcc <knob 1-4> <0-127>    CC a knob sends\n"
-    "drivech <knob 1-4> <0-16>   channel that moves a knob (0 = off)\n"
-    "drivecc <knob 1-4> <0-127>  CC that moves a knob\n"
-    "feedback on|off             follow Ableton's mapping feedback on each knob's send ch + CC\n"
-    "din on|off                  also send on the DIN socket\n"
+    "outch <knob 1-4> <1-16>     MIDI Out channel of a knob\n"
+    "outcc <knob 1-4> <0-127>    MIDI Out CC of a knob\n"
+    "drivech <knob 1-4> <0-16>   MIDI In channel that moves a knob (0 = off)\n"
+    "drivecc <knob 1-4> <0-127>  MIDI In CC that moves a knob\n"
+    "feedback on|off             knobs follow values received on their Out ch + CC\n"
+    "din on|off                  mirror MIDI Out to the 5-pin DIN socket\n"
     "speed <0-127>               motor top speed\n"
     "calibrate [knob 1-4]        find end stops and motor direction (knobs move!)\n"
     "clear                       clear faults\n"

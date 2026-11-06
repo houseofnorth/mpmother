@@ -13,7 +13,7 @@
 //   settings      user settings in EEPROM
 //   pots          reading both gangs of each pot, wear check
 //   motors        DRV8833 drivers: speed, sleep, faults
-//   knobs         what each knob is doing (idle / follow / user / fault)
+//   knobs         what each knob is doing (idle / moving / touch / fault)
 //   midi_io       CC in/out and the SysEx link to the web config tool
 //   led           status LED colours
 //   console       text commands over USB serial

@@ -3,14 +3,15 @@
 Four motorised pots as a MIDI controller. Teensy 4.1, two Pololu DRV8833 drivers,
 ALPS RK16812MG099 dual-gang motorised pots. House of North.
 
-| Knob | Name     | Sends (default) | Moved by (default) |
-|------|----------|-----------------|--------------------|
-| 1    | SPACE    | ch 1, CC 20     | ch 2, CC 20        |
-| 2    | TEXTURE  | ch 1, CC 21     | ch 2, CC 21        |
-| 3    | MOVEMENT | ch 1, CC 22     | ch 2, CC 22        |
-| 4    | SHADOW   | ch 1, CC 23     | ch 2, CC 23        |
+| Knob | Name     | MIDI Out (default) | MIDI In (default) |
+|------|----------|--------------------|-------------------|
+| 1    | SPACE    | ch 1, CC 20        | ch 2, CC 20       |
+| 2    | TEXTURE  | ch 1, CC 21        | ch 2, CC 21       |
+| 3    | MOVEMENT | ch 1, CC 22        | ch 2, CC 22       |
+| 4    | SHADOW   | ch 1, CC 23        | ch 2, CC 23       |
 
-Every knob has its own channel and CC for both, set in the config tool.
+MIDI Out is what a knob sends, MIDI In is what moves it. Every knob has its own channel and CC
+for both, set in the config tool.
 
 ## Using it with Ableton Live
 
@@ -34,7 +35,7 @@ It works while Ableton is running.
 |-----------------|---------|
 | dim green       | ready |
 | blue flicker    | MIDI in or out |
-| amber blink     | a pot is getting worn |
+| amber blink     | pot wear (the two wipers drift apart) |
 | red blink       | fault, motors held off |
 | solid red       | driver kept faulting, needs *Clear faults* or a power cycle |
 | white blink ×3  | restarted by the watchdog |
