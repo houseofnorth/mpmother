@@ -205,19 +205,26 @@
     main { padding: 0 16px 60px; }
     .hint-wide { display: none; }
 
-    /* compact monitors, pinned to the top while the rest scrolls */
+    /* compact monitors in a 2x2 grid like the front panel, pinned to the top while the rest scrolls */
     #monitor { position: sticky; top: 0; z-index: 10; background: var(--black);
                border-bottom: 1px solid var(--ink); margin: 0 -16px; padding: 0 16px; }
     #monitor .key { display: none; }
-    #monitor .knob { grid-template-columns: 96px 1fr; }
-    #monitor .knob > * { padding: 6px 0; }
+    #knobs { display: grid; grid-template-columns: 1fr 1fr; }
+    #monitor .knob { grid-template-columns: 1fr; }
+    #monitor .knob:nth-child(odd) { border-right: 1px solid var(--faint); padding-right: 10px; }
+    #monitor .knob:nth-child(even) { padding-left: 10px; }
+    #monitor .knob:nth-child(n+3) { border-bottom: 0; }
+    #monitor .knob > * { padding: 6px 0 0; }
     #monitor .knob .side, #monitor .index, #monitor .cc-label { display: none; }
-    #monitor .knob .ident { padding-right: 10px; justify-content: center; }
-    #monitor .knob .name { font-size: 14px; letter-spacing: .14em; margin: 0; }
-    #monitor .knob .cc { font-size: 34px; margin-top: 2px; }
-    #monitor .knob .mode { font-size: 11px; letter-spacing: .14em; margin-top: 2px; }
+    /* name and mode on the left, value on the right, plot underneath */
+    #monitor .knob .ident { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "name cc" "mode cc";
+                            align-items: end; padding: 16px 0 0; }  /* clears the panel screws */
+    #monitor .knob .ident > div:first-child { display: contents; }
+    #monitor .knob .name { grid-area: name; font-size: 14px; letter-spacing: .14em; margin: 0; }
+    #monitor .knob .cc { grid-area: cc; font-size: 34px; margin: 0; }
+    #monitor .knob .mode { grid-area: mode; justify-self: start; font-size: 11px; letter-spacing: .14em; margin-top: 2px; }
     #monitor .knob .mode.user { padding: 1px 5px 0; }
-    #monitor .plot-wrap { border-right: 0; }
+    #monitor .plot-wrap { border: 0; }
     #monitor canvas { height: 64px; }
 
     .system { grid-template-columns: repeat(4, 1fr); }
