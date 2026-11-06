@@ -13,7 +13,7 @@ Every message: `F0 7D 4D 50 <command> <data…> F7`
 | `01` | hello          | –               | `41` hello              |
 | `02` | get settings   | –               | `42` settings           |
 | `03` | set settings   | settings bytes 0–11 | `42` settings (saved to EEPROM) |
-| `04` | calibrate      | –               | `42` settings when done (~15 s, knobs move) |
+| `04` | calibrate      | knob 0–3, or 127 / nothing = all | `42` settings when done (~4 s per knob, knobs move) |
 | `05` | factory reset  | –               | `42` settings           |
 | `06` | clear faults   | –               | `43` status             |
 | `07` | monitor        | –               | `43` status every 50 ms for the next 5 s. Resend every 2 s to keep it going. |

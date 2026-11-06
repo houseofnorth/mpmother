@@ -15,5 +15,6 @@ void sendKnobCC(uint8_t k, uint8_t value);
 
 bool midiInRecently(uint32_t ms);        // for the status LED
 bool midiOutRecently(uint32_t ms);
-bool calibrationRequested();             // set by the config tool, cleared when read
+const int NO_CALIBRATION = -2;
+int  calibrationRequested();             // knob 0-3, ALL_KNOBS or NO_CALIBRATION. Cleared when read
 void sendSettingsToTool();               // after a change from the serial console

@@ -30,7 +30,7 @@ const uint32_t MONITOR_TIMEOUT_MS  = 5000;
 
 static uint32_t lastIn = 0, lastOut = 0;
 static uint32_t monitorUntil = 0, lastStatusSent = 0;
-static bool     wantCalibration = false;
+static int      wantCalibration = NO_CALIBRATION;
 
 // ---------- helpers ----------
 static uint8_t hi7(int v) { return (v >> 7) & 0x7F; }
@@ -135,7 +135,9 @@ static void onSysex(uint8_t *msg, unsigned length) {
     }
     case CMD_GET_SETTINGS:  sendSettingsToTool(); break;
     case CMD_SET_SETTINGS:  applySettingsFromTool(data, dataLength); sendSettingsToTool(); break;
-    case CMD_CALIBRATE:     wantCalibration = true; break;  // runs from loop(), not in here
+    case CMD_CALIBRATE:     // data: knob 0-3, or nothing / 127 = all. Runs from loop(), not in here
+      wantCalibration = (dataLength > 0 && data[0] < NUM_KNOBS) ? data[0] : ALL_KNOBS;
+      break;
     case CMD_FACTORY_RESET: factoryDefaults(); saveSettings(); sendSettingsToTool(); break;
     case CMD_CLEAR_FAULTS:  clearKnobFaults(); clearDriverFault(); sendStatus(); break;
     case CMD_MONITOR:       monitorUntil = millis() + MONITOR_TIMEOUT_MS; break;
@@ -161,8 +163,8 @@ void updateMidi() {
 bool midiInRecently(uint32_t ms)  { return lastIn  && millis() - lastIn  < ms; }
 bool midiOutRecently(uint32_t ms) { return lastOut && millis() - lastOut < ms; }
 
-bool calibrationRequested() {
-  bool yes = wantCalibration;
-  wantCalibration = false;
-  return yes;
+int calibrationRequested() {
+  int which = wantCalibration;
+  wantCalibration = NO_CALIBRATION;
+  return which;
 }

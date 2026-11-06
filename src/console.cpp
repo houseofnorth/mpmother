@@ -28,7 +28,7 @@ static void printHelp() {
     "feedback on|off             follow Ableton's mapping feedback on the out channel\n"
     "din on|off                  also send on the DIN socket\n"
     "speed <0-127>               motor top speed\n"
-    "calibrate                   find end stops and motor direction (knobs move!)\n"
+    "calibrate [knob 1-4]        find end stops and motor direction (knobs move!)\n"
     "clear                       clear faults\n"
     "send                        send all knob positions once\n"
     "defaults                    factory settings");
@@ -53,7 +53,8 @@ static void handleLine(char *line, void (*keepAlive)()) {
   else if (!strcmp(cmd, "din") && a)       settings.dinOut = isOn(a);
   else if (!strcmp(cmd, "speed") && a)     settings.maxSpeed = constrain(atoi(a), 0, 127);
   else if (!strcmp(cmd, "defaults"))       factoryDefaults();
-  else if (!strcmp(cmd, "calibrate"))      { Serial.println("calibrating - hands off the knobs"); calibrateKnobs(keepAlive); }
+  else if (!strcmp(cmd, "calibrate"))      { Serial.println("calibrating - hands off the knobs");
+                                             calibrateKnobs(keepAlive, (knob >= 0 && knob < NUM_KNOBS) ? knob : ALL_KNOBS); }
   else if (!strcmp(cmd, "clear"))          { clearKnobFaults(); clearDriverFault(); changed = false; }
   else if (!strcmp(cmd, "send"))           { sendAllPositions(); changed = false; }
   else                                     { printHelp(); return; }

@@ -249,8 +249,9 @@ static void waitFor(uint32_t ms, void (*keepAlive)()) {
   while (millis() - start < ms) { keepAlive(); delay(1); }
 }
 
-void calibrateKnobs(void (*keepAlive)()) {
+void calibrateKnobs(void (*keepAlive)(), int which) {
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {
+    if (which != ALL_KNOBS && which != k) continue;
     // 1. Which way does the motor turn the pot?
     settings.reverse[k] = false;
     int p0 = readPotSlow(k);

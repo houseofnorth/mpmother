@@ -56,7 +56,8 @@ void loop() {
   feedWatchdog();
   updateMidi();
   updateConsole(feedWatchdog);
-  if (calibrationRequested()) { calibrateKnobs(feedWatchdog); sendSettingsToTool(); }
+  int calibrate = calibrationRequested();
+  if (calibrate != NO_CALIBRATION) { calibrateKnobs(feedWatchdog, calibrate); sendSettingsToTool(); }
 
   static elapsedMicros sinceTick;
   if (sinceTick >= 1000) {  // 1 kHz control loop

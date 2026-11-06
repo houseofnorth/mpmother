@@ -108,27 +108,60 @@
   .key i.target { border-top: 1px dashed var(--ink); }
   .key i.band { height: 8px; border: 0; background: var(--ink); vertical-align: 1px; }
 
-  /* ---------- settings ---------- */
-  .settings { display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; }
-  .field { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 20px;
-           padding: 14px 0 10px; border-bottom: 1px solid var(--faint); }
-  .field .hint { display: block; font-size: 12px; letter-spacing: .14em; color: var(--dim); margin-top: 4px; text-transform: none; }
-  input[type=number] { font: inherit; font-size: 22px; letter-spacing: .06em; color: var(--ink);
-           background: transparent; border: 0; border-bottom: 1px solid var(--dim); border-radius: 0;
-           width: 72px; text-align: right; padding: 2px 0 0; -moz-appearance: textfield; }
-  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-  input[type=number]:focus { outline: none; border-bottom-color: var(--ink); }
-  .toggle { font-size: 20px; letter-spacing: .14em; border: 0; padding: 2px 0 0; color: var(--dim); }
-  .toggle.on { color: var(--ink); }
-  .toggle:hover:not(:disabled) { background: transparent; color: var(--ink); }
+  /* ---------- settings: hardware-editor parameter banks ---------- */
+  .banks { display: grid; grid-template-columns: 4fr 1fr; gap: 0 28px; }
+  .bank-title { display: flex; gap: 12px; align-items: baseline; padding: 18px 0 10px;
+                font-size: 13px; letter-spacing: .3em; color: var(--dim); }
+  .bank-title b { font-weight: normal; color: var(--black); background: var(--dim); padding: 2px 6px 0; letter-spacing: .1em; }
+  .banks > div { display: flex; flex-direction: column; }
+  .banks .cells { flex: 1; }
+  .cells { display: grid; gap: 1px; background: var(--faint); border: 1px solid var(--faint); }
+  .cells.c4 { grid-template-columns: repeat(4, 1fr); }
+  .cells.c1 { grid-template-columns: 1fr; }
+  .cells.map { grid-template-columns: 130px repeat(4, 1fr); }
+  .cells > div { background: var(--black); }
+  .rowhead, .colhead { padding: 12px 14px 8px; font-size: 13px; letter-spacing: .2em; color: var(--dim);
+                       display: flex; flex-direction: column; justify-content: center; }
+  .colhead span { color: var(--ink); font-size: 18px; letter-spacing: .12em; margin-top: 2px; }
 
-  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-  th { font-weight: normal; font-size: 13px; letter-spacing: .18em; color: var(--dim); text-align: left;
-       padding: 14px 0 8px; border-bottom: 1px solid var(--faint); }
-  td { padding: 10px 0 8px; border-bottom: 1px solid var(--faint); font-size: 20px; }
-  td input[type=number] { width: 56px; text-align: left; }
-  td.cal { color: var(--dim); font-size: 17px; }
+  .param { position: relative; padding: 12px 14px 12px; user-select: none; cursor: ns-resize; outline: none;
+           display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto auto; column-gap: 8px; }
+  .param:focus-visible { box-shadow: inset 0 0 0 1px var(--ink); }
+  .param .p-label { grid-column: 1 / -1; font-size: 13px; letter-spacing: .22em; color: var(--dim); }
+  .param .p-value { font-size: 46px; line-height: 1; letter-spacing: .02em; padding-top: 8px; min-height: 57px;
+                    font-variant-numeric: tabular-nums; }
+  .param .p-step { display: flex; flex-direction: column; justify-content: flex-end; gap: 1px; }
+  .param .p-step button { width: 30px; height: 24px; padding: 0; border-color: var(--faint); color: var(--dim);
+                          font-size: 18px; letter-spacing: 0; line-height: 24px; }
+  .param .p-step button:hover { background: var(--ink); color: var(--black); border-color: var(--ink); }
+  .param .p-meter { grid-column: 1 / -1; height: 2px; background: var(--hair); margin-top: 10px; }
+  .param .p-meter div { height: 100%; background: var(--dim); }
+  .param .p-desc { grid-column: 1 / -1; font-size: 12px; letter-spacing: .14em; color: var(--dim); margin-top: 8px;
+                   text-transform: none; }
+  .param.bool { cursor: pointer; }
+  .param.bool .p-value { color: var(--dim); }
+  .param.bool.on .p-value { color: var(--ink); }
+  .param.changed .p-value { color: var(--amber); }
+  .param.changed::after { content: ""; position: absolute; top: 12px; right: 14px; width: 6px; height: 6px; background: var(--amber); }
+  .param.disabled { pointer-events: none; }
+  .param.disabled .p-value { color: var(--faint); }
 
+  .savebar { display: flex; align-items: center; gap: 12px; padding: 18px 0 0; }
+  .savebar .sync { flex: 1; font-size: 15px; letter-spacing: .18em; color: var(--dim); }
+  .savebar .sync.dirty { color: var(--amber); }
+
+  /* ---------- maintenance ---------- */
+  .maint { display: grid; grid-template-columns: 200px 1.6fr 1fr 1fr 1.6fr 150px; }
+  .maint > div { padding: 14px 12px 12px 0; border-bottom: 1px solid var(--faint); display: flex;
+                 flex-direction: column; justify-content: center; gap: 6px; }
+  .maint .head { font-size: 13px; letter-spacing: .2em; color: var(--dim); padding-top: 10px; padding-bottom: 8px; }
+  .maint .knobname { font-size: 20px; letter-spacing: .12em; }
+  .maint .knobname small { display: block; font-size: 13px; letter-spacing: .3em; color: var(--dim); }
+  .maint .val { font-size: 20px; }
+  .maint .ok { color: var(--dim); }
+  .range { position: relative; height: 4px; background: var(--hair); }
+  .range div { position: absolute; top: 0; bottom: 0; background: var(--ink); }
+  .maint button { padding: 7px 12px 5px; font-size: 14px; }
   .actions { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 22px; }
   .actions .gap { flex: 1; }
 
@@ -148,7 +181,12 @@
     .knob { grid-template-columns: 1fr; }
     .plot-wrap { border: 0; }
     .knob .side { padding-left: 0; }
-    .settings { grid-template-columns: 1fr; }
+    .banks { grid-template-columns: 1fr; }
+    .cells.c4 { grid-template-columns: 1fr 1fr; }
+    .cells.map { grid-template-columns: 90px repeat(4, 1fr); }
+    .param .p-value { font-size: 32px; }
+    .maint { grid-template-columns: 1fr 1fr; }
+    .maint .head { display: none; }
   }
 </style>
 </head>
@@ -189,35 +227,31 @@
   <span><i class="band"></i>Hand on the knob</span>
 </div>
 
-<h2><span>Settings</span><span id="dirty"></span></h2>
-<div class="settings">
+<h2><span>Settings</span><span>drag, scroll or use arrow keys · shift = ×10</span></h2>
+<div class="banks">
   <div>
-    <div class="field"><label for="outChannel">Knobs send on channel</label>
-      <input type="number" id="outChannel" min="1" max="16"></div>
-    <div class="field"><label for="driveChannel">Ableton drives knobs on channel
-      <span class="hint">0 switches it off</span></label>
-      <input type="number" id="driveChannel" min="0" max="16"></div>
-    <div class="field"><span>Follow mapping feedback
-      <span class="hint">Knobs jump to the mapped value when a set loads</span></span>
-      <button class="toggle" id="followFeedback" data-on="0">Off</button></div>
-    <div class="field"><span>DIN MIDI out</span>
-      <button class="toggle" id="dinOut" data-on="0">Off</button></div>
-    <div class="field"><label for="maxSpeed">Motor speed<span class="hint">0 – 127</span></label>
-      <input type="number" id="maxSpeed" min="0" max="127"></div>
+    <div class="bank-title"><b>A</b>MIDI</div>
+    <div class="cells c4" id="bankMidi"></div>
   </div>
   <div>
-    <table>
-      <thead><tr><th>Knob</th><th>Sends CC</th><th>Moved by CC</th><th>Calibrated range</th></tr></thead>
-      <tbody id="ccTable"></tbody>
-    </table>
+    <div class="bank-title"><b>B</b>Motor</div>
+    <div class="cells c1" id="bankMotor"></div>
   </div>
 </div>
-<div class="actions">
+<div class="bank-title"><b>C</b>Mapping</div>
+<div class="cells map" id="bankMap"></div>
+<div class="savebar">
+  <span class="sync" id="sync">Not connected</span>
+  <button class="quiet" id="revertBtn" disabled>Revert</button>
   <button id="saveBtn" disabled>Save to controller</button>
-  <button class="quiet" id="reloadBtn" disabled>Undo changes</button>
-  <span class="gap"></span>
+</div>
+
+<h2><span>Maintenance</span><span>calibration · faults</span></h2>
+<div class="maint" id="maint"></div>
+<div class="actions">
+  <button class="quiet" id="calibrateBtn" disabled>Calibrate all</button>
   <button class="quiet" id="clearBtn" disabled>Clear faults</button>
-  <button class="quiet" id="calibrateBtn" disabled>Calibrate</button>
+  <span class="gap"></span>
   <button class="quiet" id="resetBtn" disabled>Factory reset</button>
 </div>
 
@@ -425,11 +459,14 @@ function showStatus(d) {
     $(`wd${k}`).textContent = diff;
     $(`wd${k}`).className = "num" + (worn ? " warn" : "");
 
+    Object.assign(health[k], { worn: !!worn, fault, diff });
+
     const msg = $(`msg${k}`);
     if (fault)     { msg.textContent = FAULT_TEXT[fault]; msg.className = "msg bad-text"; }
     else if (worn) { msg.textContent = "Pot wearing out"; msg.className = "msg warn"; }
     else           { msg.textContent = ""; msg.className = "msg"; }
   }
+  renderMaintenance();
 }
 
 // ===========================================================================
@@ -448,46 +485,168 @@ function parseSettings(d) {
   return s;
 }
 
-function setToggle(id, on) {
-  const el = $(id);
-  el.dataset.on = on ? "1" : "0";
-  el.textContent = on ? "On" : "Off";
-  el.classList.toggle("on", on);
+// ---------------------------------------------------------------------------
+// Parameter cells (hardware-editor style). `draft` holds what is on screen,
+// `settings` what the controller has saved. They differ until "Save".
+// ---------------------------------------------------------------------------
+const pad = (v, n) => String(v).padStart(n, "0");
+const PARAMS = {
+  outChannel:     { label: "Out ch",   desc: "Knobs send on this channel", min: 1, max: 16,  fmt: v => pad(v, 2) },
+  driveChannel:   { label: "Drive ch", desc: "Ableton moves knobs from here", min: 0, max: 16, fmt: v => v ? pad(v, 2) : "Off" },
+  followFeedback: { label: "Feedback", desc: "Follow mapped values on the out channel", bool: true },
+  dinOut:         { label: "DIN out",  desc: "Also send on the 5-pin socket", bool: true },
+  maxSpeed:       { label: "Speed",    desc: "Motor top speed", min: 0, max: 127, fmt: v => pad(v, 3) },
+};
+KNOB_NAMES.forEach((_, k) => {
+  PARAMS[`outCC${k}`]   = { label: "Send CC",  min: 0, max: 127, fmt: v => pad(v, 3) };
+  PARAMS[`driveCC${k}`] = { label: "Drive CC", min: 0, max: 127, fmt: v => pad(v, 3) };
+});
+let draft = null;
+
+function paramCell(key, withDesc = true) {
+  const p = PARAMS[key];
+  return `<div class="param${p.bool ? " bool" : ""}" data-key="${key}" tabindex="0">
+    <div class="p-label">${p.label}</div>
+    <div class="p-value" id="pv-${key}">—</div>
+    <div class="p-step">${p.bool ? "" : `<button data-step="1" tabindex="-1">+</button><button data-step="-1" tabindex="-1">−</button>`}</div>
+    <div class="p-meter"><div id="pm-${key}"></div></div>
+    ${withDesc && p.desc ? `<div class="p-desc">${p.desc}</div>` : ""}
+  </div>`;
+}
+
+function buildSettings() {
+  $("bankMidi").innerHTML = ["outChannel", "driveChannel", "followFeedback", "dinOut"].map(k => paramCell(k)).join("");
+  $("bankMotor").innerHTML = paramCell("maxSpeed");
+  $("bankMap").innerHTML =
+    `<div class="colhead"></div>` +
+    KNOB_NAMES.map((name, k) => `<div class="colhead">0${k + 1}<span>${name}</span></div>`).join("") +
+    `<div class="rowhead">Knob sends</div>` + KNOB_NAMES.map((_, k) => paramCell(`outCC${k}`, false)).join("") +
+    `<div class="rowhead">Moved by</div>` + KNOB_NAMES.map((_, k) => paramCell(`driveCC${k}`, false)).join("");
+
+  document.querySelectorAll(".param").forEach(cell => {
+    const key = cell.dataset.key, p = PARAMS[key];
+    if (p.bool) { cell.addEventListener("click", () => setParam(key, draft && !draft[key])); return; }
+
+    cell.querySelectorAll("[data-step]").forEach(b =>
+      b.addEventListener("click", e => { e.stopPropagation(); nudge(key, Number(b.dataset.step) * (e.shiftKey ? 10 : 1)); }));
+    cell.addEventListener("wheel", e => { e.preventDefault(); nudge(key, (e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 10 : 1)); }, { passive: false });
+    cell.addEventListener("pointerdown", e => {   // drag up / down
+      if (e.target.closest("button") || !draft) return;
+      const startY = e.clientY, startValue = draft[key];
+      cell.setPointerCapture(e.pointerId);
+      const move = ev => setParam(key, startValue + Math.round((startY - ev.clientY) / (ev.shiftKey ? 1 : 4)));
+      const up = () => { cell.removeEventListener("pointermove", move); cell.removeEventListener("pointerup", up); };
+      cell.addEventListener("pointermove", move);
+      cell.addEventListener("pointerup", up);
+    });
+  });
+  document.addEventListener("keydown", e => {
+    const cell = document.activeElement?.closest?.(".param");
+    if (!cell || !draft) return;
+    const key = cell.dataset.key, step = e.shiftKey ? 10 : 1;
+    if (PARAMS[key].bool && (e.key === " " || e.key === "Enter")) { e.preventDefault(); setParam(key, !draft[key]); }
+    if (e.key === "ArrowUp" || e.key === "ArrowRight") { e.preventDefault(); nudge(key, step); }
+    if (e.key === "ArrowDown" || e.key === "ArrowLeft") { e.preventDefault(); nudge(key, -step); }
+  });
+  renderParams();
+}
+
+function nudge(key, delta) { if (draft) setParam(key, draft[key] + delta); }
+
+function setParam(key, value) {
+  if (!draft) return;
+  const p = PARAMS[key];
+  draft[key] = p.bool ? !!value : Math.min(p.max, Math.max(p.min, value));
+  renderParams();
+}
+
+function flatten(s) {
+  const f = { outChannel: s.outChannel, driveChannel: s.driveChannel, followFeedback: s.followFeedback,
+              dinOut: s.dinOut, maxSpeed: s.maxSpeed };
+  s.outCC.forEach((v, k) => f[`outCC${k}`] = v);
+  s.driveCC.forEach((v, k) => f[`driveCC${k}`] = v);
+  return f;
+}
+
+function renderParams() {
+  const saved = settings ? flatten(settings) : null;
+  let changes = 0;
+  for (const [key, p] of Object.entries(PARAMS)) {
+    const cell = document.querySelector(`.param[data-key="${key}"]`);
+    const value = draft ? draft[key] : null;
+    const changed = draft && saved && value !== saved[key];
+    if (changed) changes++;
+    cell.classList.toggle("changed", !!changed);
+    cell.classList.toggle("on", !!(p.bool && value));
+    cell.classList.toggle("disabled", !draft || (key.startsWith("driveCC") && draft.driveChannel === 0));
+    $(`pv-${key}`).textContent = value === null ? "—" : p.bool ? (value ? "On" : "Off") : p.fmt(value);
+    $(`pm-${key}`).style.width = value === null ? "0" : p.bool ? (value ? "100%" : "0") : `${(value - p.min) / (p.max - p.min) * 100}%`;
+  }
+  const sync = $("sync");
+  sync.textContent = !draft ? "Not connected" : changes ? `${changes} change${changes > 1 ? "s" : ""} · not saved` : "In sync with controller";
+  sync.className = "sync" + (changes ? " dirty" : "");
+  $("saveBtn").disabled = !changes;
+  $("revertBtn").disabled = !changes;
 }
 
 function showSettings(s) {
-  $("outChannel").value = s.outChannel;
-  $("driveChannel").value = s.driveChannel;
-  setToggle("followFeedback", s.followFeedback);
-  setToggle("dinOut", s.dinOut);
-  $("maxSpeed").value = s.maxSpeed;
-  $("ccTable").innerHTML = KNOB_NAMES.map((name, k) => `
-    <tr><td>${name}</td>
-      <td><input type="number" min="0" max="127" id="outCC${k}" value="${s.outCC[k]}"></td>
-      <td><input type="number" min="0" max="127" id="driveCC${k}" value="${s.driveCC[k]}"></td>
-      <td class="cal num">${s.cal[k].calLow} – ${s.cal[k].calHigh}${s.cal[k].reverse ? " · reversed" : ""}</td></tr>`).join("");
+  draft = flatten(s);
+  renderParams();
   KNOB_NAMES.forEach((_, k) => {
     $(`ccLabel${k}`).textContent = `CC ${s.outCC[k]} · CH ${s.outChannel}`;
-    $(`driveLabel${k}`).textContent = s.driveChannel ? `Move · CC ${s.driveCC[k]} · CH ${s.driveChannel}`
-                                                     : "Drive channel is off";
+    $(`driveLabel${k}`).textContent = s.driveChannel ? `Move · CC ${s.driveCC[k]} · CH ${s.driveChannel}` : "Drive channel is off";
     $(`drive${k}`).disabled = !s.driveChannel;
   });
-  markDirty(false);
+  renderMaintenance();
 }
 
-function markDirty(dirty) { $("dirty").textContent = dirty ? "Not saved" : ""; $("dirty").style.color = "var(--amber)"; }
-
-const clampInput = (id, lo, hi) => Math.min(hi, Math.max(lo, Number($(id).value) || 0));
-
-function settingsFromForm() {
+function settingsFromDraft() {
+  const d = draft;
   return [
-    clampInput("outChannel", 1, 16),
-    clampInput("driveChannel", 0, 16),
-    ...[0, 1, 2, 3].map(k => clampInput(`outCC${k}`, 0, 127)),
-    ...[0, 1, 2, 3].map(k => clampInput(`driveCC${k}`, 0, 127)),
-    ($("followFeedback").dataset.on === "1" ? 1 : 0) | ($("dinOut").dataset.on === "1" ? 2 : 0),
-    clampInput("maxSpeed", 0, 127),
+    d.outChannel, d.driveChannel,
+    ...[0, 1, 2, 3].map(k => d[`outCC${k}`]),
+    ...[0, 1, 2, 3].map(k => d[`driveCC${k}`]),
+    (d.followFeedback ? 1 : 0) | (d.dinOut ? 2 : 0),
+    d.maxSpeed,
   ];
+}
+
+// ---------------------------------------------------------------------------
+// Maintenance: calibration and health per knob
+// ---------------------------------------------------------------------------
+const health = KNOB_NAMES.map(() => ({ worn: false, fault: 0, diff: 0 }));
+
+function buildMaintenance() {
+  $("maint").innerHTML =
+    ["Knob", "Calibrated range", "Motor", "Pot halves", "Status", ""].map(h => `<div class="head">${h}</div>`).join("") +
+    KNOB_NAMES.map((name, k) => `
+      <div class="knobname"><small>0${k + 1}</small>${name}</div>
+      <div><span class="val num" id="mRange${k}">—</span><div class="range"><div id="mBar${k}"></div></div></div>
+      <div class="val" id="mDir${k}">—</div>
+      <div class="val num" id="mPot${k}">—</div>
+      <div class="val" id="mStatus${k}">—</div>
+      <div><button class="quiet" id="mCal${k}" disabled>Calibrate</button></div>`).join("");
+  KNOB_NAMES.forEach((name, k) => armed($(`mCal${k}`), "Calibrate", () => {
+    send(CMD.calibrate, [k]);
+    log(`Calibrating ${name}. Hands off for 4 seconds`);
+  }));
+}
+
+function renderMaintenance() {
+  KNOB_NAMES.forEach((_, k) => {
+    const cal = settings?.cal[k], h = health[k];
+    $(`mCal${k}`).disabled = !connected();
+    if (!cal) return;
+    $(`mRange${k}`).textContent = `${pad(cal.calLow, 4)} – ${pad(cal.calHigh, 4)}`;
+    $(`mBar${k}`).style.left = `${cal.calLow / 10.23}%`;
+    $(`mBar${k}`).style.width = `${(cal.calHigh - cal.calLow) / 10.23}%`;
+    $(`mDir${k}`).textContent = cal.reverse ? "Reversed" : "Normal";
+    $(`mDir${k}`).className = "val ok";
+    $(`mPot${k}`).textContent = h.worn ? `Worn · Δ ${h.diff}` : `OK · Δ ${h.diff}`;
+    $(`mPot${k}`).className = "val num " + (h.worn ? "warn" : "ok");
+    $(`mStatus${k}`).textContent = h.fault ? FAULT_TEXT[h.fault] : "OK";
+    $(`mStatus${k}`).className = "val " + (h.fault ? "bad-text" : "ok");
+  });
 }
 
 // Buttons that do something big need a second click within 3 s.
@@ -546,7 +705,9 @@ function fillPicker() {
 
 function setConnected(name) {
   const on = !!name;
-  ["saveBtn", "reloadBtn", "clearBtn", "calibrateBtn", "resetBtn"].forEach(id => $(id).disabled = !on);
+  ["clearBtn", "calibrateBtn", "resetBtn"].forEach(id => $(id).disabled = !on);
+  if (!on) { draft = null; settings = null; renderParams(); }
+  renderMaintenance();
   $("connectBtn").textContent = on ? "Disconnect" : "Connect";
   $("demoBtn").classList.toggle("hidden", on && !demo);
   $("deviceName").textContent = name || "No controller";
@@ -588,16 +749,16 @@ function disconnect() {
 
 async function start() {
   buildKnobs();
+  buildSettings();
+  buildMaintenance();
   requestAnimationFrame(animate);
   $("connectBtn").onclick = () => (connected() ? disconnect() : connect());
   $("demoBtn").onclick = () => { if (connected()) disconnect(); demo = new DemoController(onMessage); log("Demo: simulated controller"); startSession("MPMOTHER demo"); };
-  $("saveBtn").onclick = () => { send(CMD.setSettings, settingsFromForm()); log("Settings saved to controller"); };
-  $("reloadBtn").onclick = () => send(CMD.getSettings);
+  $("saveBtn").onclick = () => { send(CMD.setSettings, settingsFromDraft()); log("Settings saved to controller"); };
+  $("revertBtn").onclick = () => { if (settings) showSettings(settings); log("Changes reverted"); };
   $("clearBtn").onclick = () => { send(CMD.clearFaults); log("Faults cleared"); };
-  armed($("calibrateBtn"), "Calibrate", () => { send(CMD.calibrate); log("Calibrating. Hands off for 15 seconds"); });
+  armed($("calibrateBtn"), "Calibrate all", () => { send(CMD.calibrate, [127]); log("Calibrating all knobs. Hands off for 15 seconds"); });
   armed($("resetBtn"), "Factory reset", () => { send(CMD.factoryReset); log("Factory reset"); });
-  ["followFeedback", "dinOut"].forEach(id => $(id).onclick = () => { setToggle(id, $(id).dataset.on !== "1"); markDirty(true); });
-  document.querySelector(".settings").addEventListener("input", () => markDirty(true));
 
   if (!navigator.requestMIDIAccess) { $("noMidi").classList.remove("hidden"); return; }
   try {
