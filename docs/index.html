@@ -4,11 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MPMOTHER</title>
-<!-- DIN Condensed ships with macOS. Barlow Condensed is the stand-in everywhere else. -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600&display=swap" rel="stylesheet">
+<!-- Installable app: works offline once opened (sw.js), own window and icon -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="icon-192.png">
 <style>
+  /* DIN Condensed ships with macOS. Barlow Condensed (SIL Open Font License, fonts/OFL.txt)
+     is the stand-in everywhere else, stored next to the page so it works offline. */
+  @font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 400; font-display: swap;
+               src: url("fonts/BarlowCondensed-Regular-latin.woff2") format("woff2"); }
   :root {
     --black: #000;
     --ink: #ece4d0;       /* main text, plot line - warm silkscreen white */
@@ -297,6 +301,7 @@
   <div class="device-name"><span id="deviceName">No device</span> · <span class="state" id="deviceState">Offline</span></div>
   <div class="device">
     <div style="display:flex; gap:10px">
+      <button class="quiet hidden" id="installBtn" title="Install as an app: own window, works offline">Install</button>
       <button class="quiet" id="viewBtn" title="Settings, maintenance and log">Settings</button>
       <button class="quiet" id="demoBtn" title="With a device: random moves on the real knobs. Without: a simulated device">Demo</button>
       <button id="connectBtn">Connect</button>
@@ -1025,6 +1030,26 @@ function setupFolds() {
   });
 }
 
+// Installable app. On the published (https) site, sw.js keeps a copy for offline use.
+// The Install button only shows when the browser offers to install the page (Chrome / Edge),
+// and hides once it is installed or when the page already runs as the app.
+function setupInstall() {
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+  let installPrompt = null;
+  const btn = $("installBtn");
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; btn.classList.remove("hidden"); });
+  window.addEventListener("appinstalled", () => { installPrompt = null; btn.classList.add("hidden"); log("Installed as an app"); });
+  btn.onclick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    installPrompt = null;
+    btn.classList.add("hidden");
+  };
+}
+
 async function start() {
   setupFolds();
   buildKnobs();
@@ -1032,6 +1057,7 @@ async function start() {
   buildMaintenance();
   showView();
   window.addEventListener("hashchange", showView);
+  setupInstall();
   $("viewBtn").onclick = () => { location.hash = location.hash === "#settings" ? "#monitor" : "#settings"; };
   requestAnimationFrame(animate);
   $("connectBtn").onclick = () => (connected() ? disconnect() : connect());

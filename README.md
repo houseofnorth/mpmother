@@ -29,6 +29,10 @@ The main page shows the four knobs live (position, where the motor is heading, h
 **Settings** (top right) has all settings, calibration, pot health and faults.
 It works while Ableton is running.
 
+**As an app, offline:** click **Install** (top right; or the install icon in Chrome's address bar).
+MPMOTHER then opens in its own window from the Dock / Start menu and works without internet.
+It updates itself whenever it is opened online.
+
 **Demo** (top right): with the controller connected, the knobs make random moves until you
 press Demo again. Without a controller it shows a simulated one.
 
