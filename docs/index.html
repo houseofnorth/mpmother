@@ -47,10 +47,10 @@
   .hidden { display: none !important; }
 
   /* ---------- type roles ---------- */
-  .label, h2, .bank-title, .rowhead, .colhead, .param .p-label, .maint .head, .maint .knobname small,
+  .label, h2, .set-head, .mapping th, .maint .head, .maint .knobname small,
   .knob .cc-label, footer {
     font-size: var(--fs-caption); letter-spacing: var(--tr-caption); color: var(--dim); font-weight: normal; }
-  .num, .knob .cc, .param .p-value, .maint .val, .system .value { font-variant-numeric: tabular-nums; }
+  .num, .knob .cc, .maint .val, .system .value { font-variant-numeric: tabular-nums; }
 
   /* ---------- buttons: hard edges, invert on hover ---------- */
   button { font: inherit; letter-spacing: var(--tr-text); text-transform: uppercase; cursor: pointer;
@@ -121,8 +121,8 @@
   .knob .mode.fault { color: var(--red); }
   .knob .mode.user { color: var(--black); background: var(--ink); align-self: flex-start; padding: 3px 8px 0; }
   /* panel screws in the corners, like a 70s modular front panel */
-  .knob, .cells { position: relative; }
-  .knob::before, .cells::before { content: ""; position: absolute; inset: 6px; pointer-events: none; z-index: 1;
+  .knob { position: relative; }
+  .knob::before { content: ""; position: absolute; inset: 6px; pointer-events: none; z-index: 1;
     background:
       radial-gradient(circle at 4px 4px, var(--screw) 2.5px, transparent 3px) top left,
       radial-gradient(circle at 4px 4px, var(--screw) 2.5px, transparent 3px) top right,
@@ -141,51 +141,77 @@
   .warn { color: var(--amber); }
   .msg { min-height: 18px; }
 
-  /* ---------- settings: hardware-editor parameter banks ---------- */
-  .banks { display: grid; grid-template-columns: 2fr 1fr; gap: 0 28px; }
-  .bank-title { display: flex; gap: 12px; align-items: baseline; padding: 18px 0 10px; }
-  .bank-title b { font-weight: normal; color: var(--black); background: var(--dim); padding: 2px 6px 0; letter-spacing: 0; }
-  .banks > div { display: flex; flex-direction: column; }
-  .banks .cells { flex: 1; }
-  .cells { display: grid; gap: 1px; background: var(--faint); border: 1px solid var(--faint); }
-  .cells.c2 { grid-template-columns: repeat(2, 1fr); }
-  .cells.c1 { grid-template-columns: 1fr; }
-  /* Mapping: wide = knobs are columns (--wr / --wc), narrow = knobs are rows (--nr / --nc) */
-  .cells.map { grid-template-columns: 130px repeat(4, 1fr); }
-  .cells.map > div { grid-row: var(--wr); grid-column: var(--wc); }
-  .cells > div { background: var(--black); }
-  .rowhead, .colhead { padding: 12px 14px 8px; display: flex; flex-direction: column; justify-content: center; }
-  .colhead span { color: var(--ink); font-size: var(--fs-reading); letter-spacing: var(--tr-reading); margin-top: 4px; }
+  /* ---------- settings: a plain list and a mapping table ----------
+     Inputs behave as expected: channels are picked, numbers are typed (arrow keys step).
+     Changed values turn amber and go to the device with Write. */
+  .settings { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 0 56px; }
+  .set-head { padding: 26px 0 10px; border-bottom: 1px solid var(--faint); }
 
-  .param { position: relative; padding: 12px 14px 12px; user-select: none; cursor: ns-resize; outline: none;
-           display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto auto; column-gap: 8px; }
-  .param:focus-visible { box-shadow: inset 0 0 0 1px var(--ink); }
-  .param .p-label { grid-column: 1 / -1; }
-  .param .p-value { font-size: var(--fs-value); line-height: 1; letter-spacing: var(--tr-display); padding-top: 8px; min-height: 57px; }
-  .param .p-step { display: flex; flex-direction: column; justify-content: flex-end; gap: 1px; }
-  .param .p-step button { width: 30px; height: 24px; padding: 0; border-color: var(--faint); color: var(--dim);
-                          font-size: 18px; letter-spacing: 0; line-height: 24px; }
-  .param .p-step button:hover { background: var(--ink); color: var(--black); border-color: var(--ink); }
-  .param .p-meter { grid-column: 1 / -1; height: 2px; background: var(--hair); margin-top: 10px; }
-  .param .p-meter div { height: 100%; background: var(--dim); }
-  /* descriptions are the only sentence-case text: small, plain, no tracking games */
-  .param .p-desc { grid-column: 1 / -1; font-size: var(--fs-caption); letter-spacing: .04em; color: var(--dim);
-                   margin-top: 8px; text-transform: none; }
-  .param.bool { cursor: pointer; }
-  .param .rocker { display: none; }
-  .param.bool .rocker { display: flex; flex-direction: column; width: 18px; height: 34px; align-self: end;
-                        border: 1px solid var(--dim); padding: 2px; gap: 2px; }
-  .param.bool .rocker span { flex: 1; background: var(--faint); }
-  .param.bool.on .rocker span:first-child { background: var(--lamp); }
-  .param.bool:not(.on) .rocker span:last-child { background: var(--dim); }
-  .param.bool .p-value { color: var(--dim); }
-  .param.bool.on .p-value { color: var(--ink); }
-  .param.changed .p-value { color: var(--amber); }
-  .param.changed::after { content: ""; position: absolute; top: 14px; right: 26px; width: 6px; height: 6px; background: var(--amber); }
-  .param.disabled { pointer-events: none; }
-  .param.disabled .p-value { color: var(--faint); }
+  /* general settings: name and control on one line, a short description underneath */
+  .set-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 16px;
+             padding: 14px 0; border-bottom: 1px solid var(--faint); }
+  .set-name { font-size: var(--fs-text); }
+  .set-desc { grid-column: 1 / -1; font-size: var(--fs-caption); letter-spacing: .04em; color: var(--dim); text-transform: none; }
+  .set-control { display: flex; align-items: center; gap: 12px; }
 
-  .savebar { display: flex; align-items: center; gap: 12px; padding: 18px 0 0; }
+  /* input fields: hairline box on black, values in the reading size */
+  .field { width: 100%; min-width: 0; height: 36px; padding: 3px 10px 0; border: 1px solid var(--faint); border-radius: 0;
+           background: var(--black); color: var(--ink); font: inherit; font-size: var(--fs-reading);
+           letter-spacing: var(--tr-reading); font-variant-numeric: tabular-nums; }
+  select.field { appearance: none; -webkit-appearance: none; min-width: 0; padding-right: 28px; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, var(--dim) 50%), linear-gradient(135deg, var(--dim) 50%, transparent 50%);
+    background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px; background-repeat: no-repeat; }
+  input.field[type=number] { appearance: textfield; -moz-appearance: textfield; }
+  input.field::-webkit-inner-spin-button, input.field::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input.field::placeholder { color: var(--faint); }
+  .field:hover:not(:disabled) { border-color: var(--dim); }
+  .field:focus { outline: none; border-color: var(--ink); }
+  .field.changed { color: var(--amber); border-color: var(--amber); }
+  .field:disabled { color: var(--faint); border-color: var(--hair); cursor: default; }
+  .field.short { width: 68px; }
+
+  /* on / off: a small slide switch, pilot-lamp orange when on */
+  .switch { display: inline-flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none;
+            color: var(--dim); font-size: var(--fs-text); }
+  .switch i { position: relative; width: 40px; height: 20px; border: 1px solid var(--dim); }
+  .switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; background: var(--dim); }
+  .switch[aria-checked="true"] { color: var(--ink); }
+  .switch[aria-checked="true"] i::after { left: 23px; background: var(--lamp); }
+  .switch.changed { color: var(--amber); }
+  .switch.changed i { border-color: var(--amber); }
+  .switch:disabled { color: var(--faint); }
+  .switch:disabled i { border-color: var(--faint); }
+  .switch:disabled i::after { background: var(--faint); }
+  @media (hover: hover) { .switch:hover:not(:disabled) { background: none; color: var(--ink); } }
+  .switch:focus-visible { outline: 1px solid var(--ink); outline-offset: 4px; }
+
+  /* speed slider: a hairline with a square cap */
+  .slider { -webkit-appearance: none; appearance: none; width: 180px; height: 24px; background: transparent; cursor: pointer; }
+  .slider::-webkit-slider-runnable-track { height: 1px; background: var(--dim); }
+  .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 20px; margin-top: -10px; border: 0; background: var(--ink); }
+  .slider::-moz-range-track { height: 1px; background: var(--dim); }
+  .slider::-moz-range-thumb { width: 10px; height: 20px; border: 0; border-radius: 0; background: var(--ink); }
+  .slider.changed::-webkit-slider-thumb { background: var(--amber); }
+  .slider.changed::-moz-range-thumb { background: var(--amber); }
+  .slider:focus { outline: none; }
+  .slider:focus-visible::-webkit-slider-thumb { outline: 1px solid var(--ink); outline-offset: 2px; }
+  .slider:disabled { opacity: .3; cursor: default; }
+
+  /* mapping: a row per knob, MIDI Out CH / CC and MIDI In CH / CC */
+  .mapping { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .mapping .c-name { width: 28%; }
+  .mapping th { text-align: left; padding: 14px 8px 8px 0; }
+  .mapping thead tr:first-child th[colspan] { border-bottom: 1px solid var(--faint); }
+  .mapping td { padding: 8px 8px 8px 0; border-top: 1px solid var(--faint); }
+  .mapping tr > :last-child { padding-right: 0; }
+  .mapping .in { padding-left: 16px; }      /* a little air between MIDI Out and MIDI In */
+  .mapping .knobname { font-size: var(--fs-text); }
+
+  /* Write / Revert stay at the bottom of the screen while the settings are in view */
+  .savebar { position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: 12px;
+             margin-top: 24px; padding: 14px 0 calc(14px + env(safe-area-inset-bottom, 0px));
+             background: var(--black); border-top: 1px solid var(--faint); }
+  .savebar.dirty { border-top-color: var(--amber); }
   .savebar .sync { flex: 1; letter-spacing: var(--tr-caption); color: var(--dim); }
   .savebar .sync.dirty { color: var(--amber); }
 
@@ -249,12 +275,14 @@
     .system .value { font-size: var(--fs-text); }
     .lamp { width: 7px; height: 7px; margin-right: 5px; vertical-align: 1px; }
 
-    .cells.map { grid-template-columns: 96px 1fr 1fr; }
-    .cells.map > div { grid-row: var(--nr); grid-column: var(--nc); }
+    .settings { grid-template-columns: 1fr; }
+    .slider { width: 130px; }
+    .mapping .c-name { width: 24%; }
+    .mapping .in { padding-left: 10px; }
+    .mapping .field { padding-left: 7px; font-size: var(--fs-text); }
+    .mapping select.field { padding-right: 18px; background-position: calc(100% - 11px) 52%, calc(100% - 6px) 52%; }
     .savebar { flex-wrap: wrap; }
     .savebar .sync { flex-basis: 100%; }
-    .banks { grid-template-columns: 1fr; }
-    .param .p-value { font-size: 34px; }
     .maint { grid-template-columns: 1fr 1fr; }
     .maint .head { display: none; }
     .maint > div[data-label]::before { content: attr(data-label); font-size: var(--fs-micro);
@@ -304,21 +332,43 @@
 <!-- ===== Subpage (#settings): settings, maintenance (calibration, pot halves), log ===== -->
 <div id="view-settings" class="hidden">
 
-<h2 class="fold" data-fold="settings"><span>Settings</span><span><span class="hint-wide">drag, scroll or arrow keys · shift = ×10</span><i></i></span></h2>
+<h2 class="fold" data-fold="settings"><span>Settings</span><span><span class="hint-wide">arrow keys step · shift = ×10</span><i></i></span></h2>
 <div class="foldbody" id="fold-settings">
-<div class="banks">
+<div class="settings">
   <div>
-    <div class="bank-title"><b>A</b>MIDI</div>
-    <div class="cells c2" id="bankMidi"></div>
+    <div class="set-head">General</div>
+    <div class="set-row">
+      <span class="set-name">Feedback</span>
+      <button type="button" class="switch" role="switch" aria-checked="false" aria-label="Feedback" data-key="followFeedback"><i></i><span>—</span></button>
+      <span class="set-desc">Knobs follow values received on their MIDI Out CH + CC (Live: Remote on)</span>
+    </div>
+    <div class="set-row">
+      <span class="set-name">DIN Out</span>
+      <button type="button" class="switch" role="switch" aria-checked="false" aria-label="DIN Out" data-key="dinOut"><i></i><span>—</span></button>
+      <span class="set-desc">Mirror MIDI Out to the 5-pin DIN socket</span>
+    </div>
+    <div class="set-row">
+      <span class="set-name">Speed</span>
+      <span class="set-control">
+        <input type="range" class="slider" min="0" max="127" step="1" aria-label="Motor speed" data-key="maxSpeed">
+        <input type="number" class="field short" min="0" max="127" step="1" inputmode="numeric" placeholder="—" aria-label="Motor speed" data-key="maxSpeed">
+      </span>
+      <span class="set-desc">Motor top speed when moving</span>
+    </div>
   </div>
   <div>
-    <div class="bank-title"><b>B</b>Motor</div>
-    <div class="cells c1" id="bankMotor"></div>
+    <div class="set-head">MIDI mapping</div>
+    <table class="mapping">
+      <colgroup><col class="c-name"><col><col><col><col></colgroup>
+      <thead>
+        <tr><th></th><th colspan="2">MIDI Out</th><th colspan="2" class="in">MIDI In</th></tr>
+        <tr><th>Knob</th><th>CH</th><th>CC</th><th class="in">CH</th><th>CC</th></tr>
+      </thead>
+      <tbody id="mappingRows"></tbody>
+    </table>
   </div>
 </div>
-<div class="bank-title"><b>C</b>Mapping</div>
-<div class="cells map" id="bankMap"></div>
-<div class="savebar">
+<div class="savebar" id="savebar">
   <span class="sync" id="sync">Not connected</span>
   <button class="quiet" id="revertBtn" disabled>Revert</button>
   <button id="saveBtn" disabled>Write</button>
@@ -690,91 +740,62 @@ function parseSettings(d) {
 }
 
 // ---------------------------------------------------------------------------
-// Parameter cells (hardware-editor style). `draft` holds what is on screen,
-// `settings` what the controller has saved. They differ until "Save".
-// ---------------------------------------------------------------------------
+// Settings: a plain list and a mapping table. `draft` holds what is on screen,
+// `settings` what the device has stored; they differ until Write.
+// Every input carries data-key; two inputs may share one (the speed slider and its number).
 // Numbers are written plain, channel before CC: "CH 1 · CC 20".
+// ---------------------------------------------------------------------------
 const pad = (v, n) => String(v).padStart(n, "0");
-const plain = v => String(v);
 const PARAMS = {
-  followFeedback: { label: "Feedback", desc: "Knobs follow values received on their Out CH + CC (Live: Remote on)", bool: true },
-  dinOut:         { label: "DIN Out",  desc: "Mirror MIDI Out to the 5-pin DIN socket", bool: true },
-  maxSpeed:       { label: "Speed",    desc: "Motor top speed when moving", min: 0, max: 127, fmt: plain },
+  followFeedback: { bool: true },
+  dinOut:         { bool: true },
+  maxSpeed:       { min: 0, max: 127 },
 };
 KNOB_NAMES.forEach((_, k) => {
-  PARAMS[`outCh${k}`]   = { label: "CH", min: 1, max: 16,  fmt: plain };
-  PARAMS[`outCC${k}`]   = { label: "CC", min: 0, max: 127, fmt: plain };
-  PARAMS[`driveCh${k}`] = { label: "CH", min: 0, max: 16,  fmt: v => v ? plain(v) : "Off" };
-  PARAMS[`driveCC${k}`] = { label: "CC", min: 0, max: 127, fmt: plain };
+  PARAMS[`outCh${k}`]   = { min: 1, max: 16 };
+  PARAMS[`outCC${k}`]   = { min: 0, max: 127 };
+  PARAMS[`driveCh${k}`] = { min: 0, max: 16 };    // 0 = MIDI In off for this knob
+  PARAMS[`driveCC${k}`] = { min: 0, max: 127 };
 });
 let draft = null;
-
-// place: grid position for the mapping bank, e.g. { wr: 2, wc: 3, nr: 4, nc: 2 }
-const placeStyle = place => place ? ` style="${Object.entries(place).map(([k, v]) => `--${k}:${v}`).join(";")}"` : "";
-
-function paramCell(key, withDesc = true, place = null) {
-  const p = PARAMS[key];
-  return `<div class="param${p.bool ? " bool" : ""}" data-key="${key}" tabindex="0"${placeStyle(place)}>
-    <div class="p-label">${p.label}</div>
-    <div class="p-value" id="pv-${key}">—</div>
-    <div class="p-step">${p.bool ? `<div class="rocker"><span></span><span></span></div>` : `<button data-step="1" tabindex="-1">+</button><button data-step="-1" tabindex="-1">−</button>`}</div>
-    <div class="p-meter"><div id="pm-${key}"></div></div>
-    ${withDesc && p.desc ? `<div class="p-desc">${p.desc}</div>` : ""}
-  </div>`;
-}
+const settingInputs = () => document.querySelectorAll("#fold-settings [data-key]");
 
 function buildSettings() {
-  $("bankMidi").innerHTML = ["followFeedback", "dinOut"].map(k => paramCell(k)).join("");
-  $("bankMotor").innerHTML = paramCell("maxSpeed");
-  // Mapping. Wide: knobs are columns, "MIDI Out" and "MIDI In" each take a CH row and a CC row.
-  // Narrow: knobs are rows (two each: CH, CC), "MIDI Out" and "MIDI In" are columns.
-  // Out = what the knob sends. In = what moves the knob (drive).
-  const GROUPS = [{ title: "MIDI Out", keys: ["outCh", "outCC"] }, { title: "MIDI In", keys: ["driveCh", "driveCC"] }];
-  $("bankMap").innerHTML =
-    `<div class="colhead"${placeStyle({ wr: 1, wc: 1, nr: 1, nc: 1 })}></div>` +
-    KNOB_NAMES.map((name, k) =>
-      `<div class="colhead"${placeStyle({ wr: 1, wc: k + 2, nr: `${2 + 2 * k} / span 2`, nc: 1 })}>0${k + 1}<span>${name}</span></div>`).join("") +
-    GROUPS.map((group, g) =>
-      `<div class="rowhead"${placeStyle({ wr: `${2 + 2 * g} / span 2`, wc: 1, nr: 1, nc: g + 2 })}>${group.title}</div>` +
-      group.keys.map((key, f) => KNOB_NAMES.map((_, k) =>
-        paramCell(`${key}${k}`, false, { wr: 2 + 2 * g + f, wc: k + 2, nr: 2 + 2 * k + f, nc: g + 2 })).join("")).join("")
-    ).join("");
+  const channels = withOff => `<option value="" hidden>—</option>` + (withOff ? `<option value="0">Off</option>` : "") +
+    Array.from({ length: 16 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join("");
+  const ccField = (key, label) =>
+    `<input class="field" type="number" min="0" max="127" step="1" inputmode="numeric" placeholder="—" aria-label="${label}" data-key="${key}">`;
+  $("mappingRows").innerHTML = KNOB_NAMES.map((name, k) => `
+    <tr>
+      <td class="knobname">${name}</td>
+      <td><select class="field" aria-label="${name} MIDI Out channel" data-key="outCh${k}">${channels(false)}</select></td>
+      <td>${ccField(`outCC${k}`, `${name} MIDI Out CC`)}</td>
+      <td class="in"><select class="field" aria-label="${name} MIDI In channel" data-key="driveCh${k}">${channels(true)}</select></td>
+      <td>${ccField(`driveCC${k}`, `${name} MIDI In CC`)}</td>
+    </tr>`).join("");
 
-  document.querySelectorAll(".param").forEach(cell => {
-    const key = cell.dataset.key, p = PARAMS[key];
-    if (p.bool) { cell.addEventListener("click", () => setParam(key, draft && !draft[key])); return; }
-
-    cell.querySelectorAll("[data-step]").forEach(b =>
-      b.addEventListener("click", e => { e.stopPropagation(); nudge(key, Number(b.dataset.step) * (e.shiftKey ? 10 : 1)); }));
-    cell.addEventListener("wheel", e => { e.preventDefault(); nudge(key, (e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? 10 : 1)); }, { passive: false });
-    cell.addEventListener("pointerdown", e => {   // drag up / down
-      if (e.target.closest("button") || !draft) return;
-      const startY = e.clientY, startValue = draft[key];
-      cell.setPointerCapture(e.pointerId);
-      const move = ev => setParam(key, startValue + Math.round((startY - ev.clientY) / (ev.shiftKey ? 1 : 4)));
-      const up = () => { cell.removeEventListener("pointermove", move); cell.removeEventListener("pointerup", up); };
-      cell.addEventListener("pointermove", move);
-      cell.addEventListener("pointerup", up);
-    });
-  });
-  document.addEventListener("keydown", e => {
-    const cell = document.activeElement?.closest?.(".param");
-    if (!cell || !draft) return;
-    const key = cell.dataset.key, step = e.shiftKey ? 10 : 1;
-    if (PARAMS[key].bool && (e.key === " " || e.key === "Enter")) { e.preventDefault(); setParam(key, !draft[key]); }
-    if (e.key === "ArrowUp" || e.key === "ArrowRight") { e.preventDefault(); nudge(key, step); }
-    if (e.key === "ArrowDown" || e.key === "ArrowLeft") { e.preventDefault(); nudge(key, -step); }
+  settingInputs().forEach(el => {
+    const key = el.dataset.key;
+    if (el.classList.contains("switch")) { el.addEventListener("click", () => setParam(key, !draft?.[key])); return; }
+    el.addEventListener("input", () => { const v = parseInt(el.value, 10); if (!Number.isNaN(v)) setParam(key, v, el); });
+    if (el.type === "number") {
+      el.addEventListener("change", () => renderParams());      // leaving the field shows the clamped value
+      el.addEventListener("keydown", e => {                      // arrow keys step 1 natively, shift = 10
+        if (!e.shiftKey || !draft || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+        e.preventDefault();
+        setParam(key, draft[key] + (e.key === "ArrowUp" ? 10 : -10));
+      });
+    }
   });
   renderParams();
 }
 
-function nudge(key, delta) { if (draft) setParam(key, draft[key] + delta); }
-
-function setParam(key, value) {
+// typingIn: the field being typed in, left alone so the cursor does not jump
+function setParam(key, value, typingIn = null) {
   if (!draft) return;
   const p = PARAMS[key];
   draft[key] = p.bool ? !!value : Math.min(p.max, Math.max(p.min, value));
-  renderParams();
+  renderParams(typingIn);
 }
 
 function flatten(s) {
@@ -786,23 +807,26 @@ function flatten(s) {
   return f;
 }
 
-function renderParams() {
+function renderParams(typingIn = null) {
   const saved = settings ? flatten(settings) : null;
-  let changes = 0;
-  for (const [key, p] of Object.entries(PARAMS)) {
-    const cell = document.querySelector(`.param[data-key="${key}"]`);
-    const value = draft ? draft[key] : null;
-    const changed = draft && saved && value !== saved[key];
-    if (changed) changes++;
-    cell.classList.toggle("changed", !!changed);
-    cell.classList.toggle("on", !!(p.bool && value));
-    cell.classList.toggle("disabled", !draft || (key.startsWith("driveCC") && draft[`driveCh${key.slice(7)}`] === 0));
-    $(`pv-${key}`).textContent = value === null ? "—" : p.bool ? (value ? "On" : "Off") : p.fmt(value);
-    $(`pm-${key}`).style.width = value === null ? "0" : p.bool ? (value ? "100%" : "0") : `${(value - p.min) / (p.max - p.min) * 100}%`;
-  }
+  const isChanged = key => !!(draft && saved && draft[key] !== saved[key]);
+  settingInputs().forEach(el => {
+    const key = el.dataset.key, value = draft ? draft[key] : null;
+    const inOff = key.startsWith("driveCC") && draft?.[`driveCh${key.slice(7)}`] === 0;   // CC unused while MIDI In is off
+    el.disabled = !draft || inOff;
+    el.classList.toggle("changed", isChanged(key) && !inOff);
+    if (el.classList.contains("switch")) {
+      el.setAttribute("aria-checked", String(!!value));
+      el.querySelector("span").textContent = value === null ? "—" : value ? "On" : "Off";
+    } else if (el !== typingIn) {
+      el.value = value === null || inOff ? "" : String(value);
+    }
+  });
+  const changes = Object.keys(PARAMS).filter(isChanged).length;
   const sync = $("sync");
   sync.textContent = !draft ? "Not connected" : changes ? `${changes} change${changes > 1 ? "s" : ""} · not written` : "In sync with device";
   sync.className = "sync" + (changes ? " dirty" : "");
+  $("savebar").classList.toggle("dirty", changes > 0);
   $("saveBtn").disabled = !changes;
   $("revertBtn").disabled = !changes;
 }
