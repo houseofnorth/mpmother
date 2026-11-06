@@ -24,7 +24,8 @@ Every knob has its own channel and CC for both, set in the config tool.
 ## Config tool
 
 Open <https://houseofnorth.github.io/mpmother/> in Chrome or Edge with the controller plugged in.
-It shows each knob live (position, both pot gangs, state, faults) and edits all settings.
+The main page shows the four knobs live (position, where the motor is heading, hand on knob).
+**Settings** (top right) has all settings, calibration, pot health and faults.
 It works while Ableton is running.
 
 ## Status LED

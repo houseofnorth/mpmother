@@ -21,12 +21,15 @@
     --amber: #e0a400;     /* wear warnings */
     --din: "DIN Condensed", "DIN Alternate", "Barlow Condensed", "Arial Narrow", sans-serif;
     --gutter: 28px;       /* page side margin, 16 px on narrow screens */
+    --quarter-min: 260px; /* smallest height of one knob quarter before the page scrolls */
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { background: var(--black); color: var(--ink); }
   body { font: 17px/1.25 var(--din); letter-spacing: .04em; text-transform: uppercase;
          -webkit-font-smoothing: antialiased; }
-  main { max-width: 1280px; margin: 0 auto; padding: 0 var(--gutter) 80px; }
+  /* main fills the screen so the four knob quarters can share the height */
+  main { max-width: 1280px; margin: 0 auto; padding: 0 var(--gutter) 24px;
+         min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
   .hidden { display: none !important; }
 
   /* ---------- labels and numbers ---------- */
@@ -74,13 +77,23 @@
   h2 { font-weight: normal; font-size: 13px; letter-spacing: .3em; color: var(--dim);
        padding: 44px 0 12px; border-bottom: 1px solid var(--ink); display: flex; justify-content: space-between; }
 
-  /* ---------- knob rows ---------- */
-  .knob { display: grid; grid-template-columns: 200px 1fr 220px; border-bottom: 1px solid var(--faint); }
-  .knob > * { padding: 18px 0; }
-  .knob .ident { padding-right: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+  /* ---------- main page: the four knobs, 2x2 like the front panel, filling the screen ----------
+     SPACE / TEXTURE over MOVEMENT / SHADOW. Each quarter: name + value left, plot right, message + Move below. */
+  #view-monitor { flex: 1; display: flex; flex-direction: column; }
+  #monitor { flex: 1; display: flex; flex-direction: column; border-top: 1px solid var(--ink); margin-top: 20px; }
+  #knobs { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+           grid-template-rows: repeat(2, minmax(var(--quarter-min), 1fr)); }
+  .knob { display: grid; grid-template-columns: 170px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto;
+          grid-template-areas: "ident plot" "msg move"; gap: 14px 20px; min-width: 0; min-height: 0;
+          padding: 20px 20px 18px 0; }
+  .knob:nth-child(even) { padding: 20px 0 18px 20px; }
+  .knob:nth-child(odd) { border-right: 1px solid var(--faint); }
+  .knob:nth-child(-n+2) { border-bottom: 1px solid var(--faint); }
+  .knob .ident { grid-area: ident; display: flex; flex-direction: column; justify-content: space-between;
+                 min-height: 0; overflow: hidden; }
   .knob .index { font-size: 13px; letter-spacing: .3em; color: var(--dim); }
   .knob .name { font-size: 30px; letter-spacing: .1em; margin-top: 2px; }
-  .knob .cc { font-size: 84px; line-height: .85; margin-top: 14px; }
+  .knob .cc { font-size: 84px; line-height: .85; margin-top: 10px; }
   .knob .cc-label { font-size: 13px; letter-spacing: .18em; color: var(--dim); margin-top: 6px; }
   .knob .mode { font-size: 18px; letter-spacing: .2em; margin-top: 14px; }
   .knob .mode.fault { color: var(--red); }
@@ -94,12 +107,11 @@
       radial-gradient(circle at 4px 4px, var(--screw) 2.5px, transparent 3px) bottom left,
       radial-gradient(circle at 4px 4px, var(--screw) 2.5px, transparent 3px) bottom right;
     background-size: 8px 8px; background-repeat: no-repeat; }
-  #monitor { border-top: 1px solid var(--ink); margin-top: 28px; }
-  .plot-wrap { position: relative; border-left: 1px solid var(--faint); border-right: 1px solid var(--faint); }
-  canvas { display: block; width: 100%; height: 190px; }
-  .knob .side { padding-left: 20px; display: flex; flex-direction: column; gap: 12px; }
-  .readout { display: grid; grid-template-columns: 1fr auto; row-gap: 4px; font-size: 18px; }
-  .readout span:nth-child(odd) { font-size: 13px; letter-spacing: .18em; color: var(--dim); align-self: center; }
+  /* the canvas fills whatever space the quarter leaves for it */
+  .plot-wrap { grid-area: plot; position: relative; min-height: 50px; }
+  canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+  .knob .msg { grid-area: msg; align-self: end; }
+  .knob .move { grid-area: move; }
   .warn { color: var(--amber); }
   .msg { font-size: 14px; letter-spacing: .12em; min-height: 18px; }
 
@@ -114,7 +126,7 @@
   input[type=range]:disabled { opacity: .3; cursor: default; }
 
   /* plot key */
-  .key { display: flex; gap: 26px; font-size: 13px; letter-spacing: .18em; color: var(--dim); padding: 12px 0 0; }
+  .key { display: flex; flex-wrap: wrap; gap: 6px 26px; font-size: 13px; letter-spacing: .18em; color: var(--dim); padding: 12px 0 0; }
   .key i { display: inline-block; width: 22px; height: 0; border-top: 2px solid var(--ink); vertical-align: 4px; margin-right: 8px; }
   .key i.target { border-top: 1px dashed var(--ink); }
   .key i.band { height: 8px; border: 0; background: var(--ink); vertical-align: 1px; }
@@ -170,7 +182,7 @@
   .savebar .sync.dirty { color: var(--amber); }
 
   /* ---------- maintenance ---------- */
-  .maint { display: grid; grid-template-columns: 200px 1.6fr 1fr 1fr 1.6fr 150px; }
+  .maint { display: grid; grid-template-columns: 160px 1.4fr .8fr .6fr .6fr .9fr 1.5fr 130px; }
   .maint > div { padding: 14px 12px 12px 0; border-bottom: 1px solid var(--faint); display: flex;
                  flex-direction: column; justify-content: center; gap: 6px; }
   .maint .head { font-size: 13px; letter-spacing: .2em; color: var(--dim); padding-top: 10px; padding-bottom: 8px; }
@@ -202,45 +214,32 @@
            font-size: 13px; letter-spacing: .2em; color: var(--dim); display: flex; justify-content: space-between; }
   footer a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--faint); }
 
-  /* ---------- compact knob monitors, pinned to the top while the rest scrolls ----------
-     Up to 1024 px: four across. Covers iPads in portrait and phones in landscape (up to 932 px).
-     2x2 like the front panel on phones in portrait (further down). */
-  @media (max-width: 1024px) {
-    #monitor { position: sticky; top: 0; z-index: 10; background: var(--black); border-bottom: 1px solid var(--ink);
-               margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); }
-    #monitor .key { display: none; }
-    #knobs { display: grid; grid-template-columns: repeat(4, 1fr); }
-    #monitor .knob { grid-template-columns: 1fr; border-bottom: 0; }
-    #monitor .knob:not(:last-child) { border-right: 1px solid var(--faint); padding-right: 10px; }
-    #monitor .knob + .knob { padding-left: 10px; }
-    #monitor .knob > * { padding: 6px 0 0; }
-    #monitor .knob .side, #monitor .index, #monitor .cc-label { display: none; }
-    /* name and mode on the left, value on the right, plot underneath */
-    #monitor .knob .ident { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "name cc" "mode cc";
-                            align-items: end; padding: 16px 0 0; }  /* clears the panel screws */
-    #monitor .knob .ident > div:first-child { display: contents; }
-    #monitor .knob .name { grid-area: name; font-size: 14px; letter-spacing: .14em; margin: 0; }
-    #monitor .knob .cc { grid-area: cc; font-size: 34px; margin: 0; }
-    #monitor .knob .mode { grid-area: mode; justify-self: start; font-size: 11px; letter-spacing: .14em; margin-top: 2px; }
-    #monitor .knob .mode.user { padding: 1px 5px 0; }
-    #monitor .plot-wrap { border: 0; }
-    #monitor canvas { height: 64px; }
+  /* ---------- compact quarters: phones (narrow) and anything short (phones in landscape) ----------
+     Name + mode left, value right, plot underneath, Move slider at the bottom. */
+  @media (max-width: 700px), (max-height: 560px) {
+    :root { --quarter-min: 130px; }
+    #monitor { margin-top: 12px; }
+    .knob { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
+            grid-template-areas: "ident" "plot" "move"; gap: 6px; padding: 0 10px 10px 0; }
+    .knob:nth-child(even) { padding: 0 0 10px 10px; }
+    .knob .index, .knob .cc-label, .knob .msg { display: none; }
+    .knob .ident { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "name cc" "mode cc";
+                   align-items: end; padding-top: 16px; }  /* clears the panel screws */
+    .knob .ident > div:first-child { display: contents; }
+    .knob .name { grid-area: name; font-size: 14px; letter-spacing: .14em; margin: 0; }
+    .knob .cc { grid-area: cc; font-size: 34px; margin: 0; }
+    .knob .mode { grid-area: mode; justify-self: start; font-size: 11px; letter-spacing: .14em; margin-top: 2px; }
+    .knob .mode.user { padding: 1px 5px 0; }
+    .knob .move .label { font-size: 11px; letter-spacing: .1em; }
   }
-  /* phones in landscape: little height to spare */
-  @media (max-height: 500px) and (pointer: coarse) {
-    #monitor canvas { height: 44px; }
-  }
-  /* phones in portrait: 2x2, SPACE / TEXTURE over MOVEMENT / SHADOW */
-  @media (max-width: 600px) {
-    #knobs { grid-template-columns: 1fr 1fr; }
-    #monitor .knob:nth-child(even) { border-right: 0; padding-right: 0; }
-    #monitor .knob:nth-child(odd) { padding-left: 0; }
-    #monitor .knob:nth-child(-n+2) { border-bottom: 1px solid var(--faint); }
+  /* short screens (phones in landscape): just name, value and plot */
+  @media (max-height: 560px) {
+    .knob { grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "ident" "plot"; }
+    .knob .move, #monitor .key { display: none; }
   }
 
   @media (max-width: 900px) {
     :root { --gutter: 16px; }
-    main { padding-bottom: 60px; }
     .hint-wide { display: none; }
 
     .system { grid-template-columns: repeat(4, 1fr); }
@@ -259,6 +258,7 @@
     .param .p-value { font-size: 32px; }
     .maint { grid-template-columns: 1fr 1fr; }
     .maint .head { display: none; }
+    .maint > div[data-label]::before { content: attr(data-label); font-size: 10px; letter-spacing: .2em; color: var(--dim); }
   }
 </style>
 </head>
@@ -269,6 +269,7 @@
   <div class="device-name"><span id="deviceName">No controller</span> · <span class="state" id="deviceState">offline</span></div>
   <div class="device">
     <div style="display:flex; gap:10px">
+      <button class="quiet" id="viewBtn" title="Settings, maintenance and log">Settings</button>
       <button class="quiet" id="demoBtn" title="Simulated controller, to try the page without hardware">Demo</button>
       <button id="connectBtn">Connect</button>
     </div>
@@ -283,6 +284,9 @@
   <span class="label">Controller listens on</span><select id="portOut"></select>
 </section>
 
+<!-- ===== Main page: live status and the four knobs ===== -->
+<div id="view-monitor">
+
 <section class="system">
   <div><span class="label">Motor drivers</span><span class="value" id="drivers"><span class="lamp"></span>—</span></div>
   <div><span class="label">MIDI from controller</span><span class="value"><span class="lamp" id="lampOut"></span><span id="txtOut">—</span></span></div>
@@ -290,7 +294,7 @@
   <div><span class="label">Firmware</span><span class="value num" id="firmware">—</span></div>
 </section>
 
-<!-- The four monitors. On narrow screens this block shrinks and stays pinned to the top. -->
+<!-- The four knobs, 2x2 like the front panel, filling the screen -->
 <section id="monitor">
   <div id="knobs"></div>
   <div class="key">
@@ -299,6 +303,11 @@
     <span><i class="band"></i>Hand on the knob</span>
   </div>
 </section>
+
+</div>
+
+<!-- ===== Subpage (#settings): settings, maintenance (calibration, pot halves), log ===== -->
+<div id="view-settings" class="hidden">
 
 <h2 class="fold" data-fold="settings"><span>Settings</span><span><span class="hint-wide">drag, scroll or arrow keys · shift = ×10</span><i></i></span></h2>
 <div class="foldbody" id="fold-settings">
@@ -321,7 +330,7 @@
 </div>
 </div>
 
-<h2 class="fold" data-fold="maintenance"><span>Maintenance</span><span><span class="hint-wide">calibration · faults</span><i></i></span></h2>
+<h2 class="fold" data-fold="maintenance"><span>Maintenance</span><span><span class="hint-wide">calibration · pot halves · faults</span><i></i></span></h2>
 <div class="foldbody" id="fold-maintenance">
 <div class="maint" id="maint"></div>
 <div class="actions">
@@ -339,6 +348,8 @@
   <span>MPMOTHER V1</span>
   <a href="https://github.com/houseofnorth/mpmother">github.com/houseofnorth/mpmother</a>
 </footer>
+
+</div>
 </main>
 
 <script>
@@ -381,7 +392,7 @@ function send(command, data = []) {
 const connected = () => !!(output || demo);
 
 // ===========================================================================
-// Knob rows
+// Knob monitors: four across, one quarter each. Pot halves A / B live in Maintenance.
 // ===========================================================================
 function buildKnobs() {
   $("knobs").innerHTML = KNOB_NAMES.map((name, k) => `
@@ -396,17 +407,10 @@ function buildKnobs() {
         <div class="mode" id="mode${k}">—</div>
       </div>
       <div class="plot-wrap"><canvas id="plot${k}"></canvas></div>
-      <div class="side">
-        <div class="readout">
-          <span>Half A</span><span class="num" id="wa${k}">—</span>
-          <span>Half B</span><span class="num" id="wb${k}">—</span>
-          <span>Difference</span><span class="num" id="wd${k}">—</span>
-        </div>
-        <div class="msg" id="msg${k}"></div>
-        <div style="margin-top:auto">
-          <div class="label" id="driveLabel${k}">Move</div>
-          <input type="range" min="0" max="127" value="64" id="drive${k}" disabled>
-        </div>
+      <div class="msg" id="msg${k}"></div>
+      <div class="move">
+        <div class="label" id="driveLabel${k}">Move</div>
+        <input type="range" min="0" max="127" value="64" id="drive${k}" disabled>
       </div>
     </div>`).join("");
 
@@ -432,8 +436,10 @@ function drawPlot(k) {
   const canvas = $(`plot${k}`);
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h) return;     // main page hidden (on the settings subpage)
   if (canvas.width !== w * dpr || canvas.height !== h * dpr) { canvas.width = w * dpr; canvas.height = h * dpr; }
-  const compact = h < 120;  // narrow-screen monitor strip
+  const compact = h < 120;  // pinned monitor strip on smaller screens
+  const tiny = w < 140;     // a quarter of a phone in portrait: no scale numbers
   const g = canvas.getContext("2d");
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, w, h);
@@ -441,7 +447,9 @@ function drawPlot(k) {
   const css = getComputedStyle(document.documentElement);
   const INK = css.getPropertyValue("--ink"), DIM = css.getPropertyValue("--dim");
   const HAIR = css.getPropertyValue("--hair"), RED = css.getPropertyValue("--red");
-  const pad = compact ? { top: 6, bottom: 8, left: 8, right: 34 } : { top: 14, bottom: 26, left: 14, right: 40 };
+  const pad = tiny    ? { top: 6, bottom: 8, left: 2, right: 10 }
+            : compact ? { top: 6, bottom: 8, left: 8, right: 34 }
+            :           { top: 14, bottom: 26, left: 4, right: 40 };
   const plotW = w - pad.left - pad.right, plotH = h - pad.top - pad.bottom;
   const now = performance.now();
   const x = t => pad.left + plotW * (1 - (now - t) / HISTORY_MS);
@@ -463,7 +471,7 @@ function drawPlot(k) {
   }
   g.font = `11px ${css.getPropertyValue("--din")}`;
   g.textBaseline = "middle";
-  for (const v of [0, 64, 127]) g.fillText(v, scaleX + 10, y(v) + 1);
+  if (!tiny) for (const v of [0, 64, 127]) g.fillText(v, scaleX + 10, y(v) + 1);
   // one tick per second along the bottom
   g.fillStyle = HAIR;
   if (!compact) for (let s = 0; s <= 10; s++) g.fillRect(Math.round(pad.left + plotW * s / 10), h - pad.bottom + 4, 1, 5);
@@ -542,12 +550,7 @@ function showStatus(d) {
     modeEl.textContent = MODE_TEXT[mode] || "?";
     modeEl.className = "mode " + (MODE_CLASS[mode] || "");
 
-    $(`wa${k}`).textContent = a;
-    $(`wb${k}`).textContent = b;
-    $(`wd${k}`).textContent = diff;
-    $(`wd${k}`).className = "num" + (worn ? " warn" : "");
-
-    Object.assign(health[k], { worn: !!worn, fault, diff });
+    Object.assign(health[k], { worn: !!worn, fault, diff, a, b });   // shown in Maintenance
 
     const msg = $(`msg${k}`);
     if (fault)     { msg.textContent = FAULT_TEXT[fault]; msg.className = "msg bad-text"; }
@@ -718,17 +721,23 @@ function settingsFromDraft() {
 // ---------------------------------------------------------------------------
 // Maintenance: calibration and health per knob
 // ---------------------------------------------------------------------------
-const health = KNOB_NAMES.map(() => ({ worn: false, fault: 0, diff: 0 }));
+// Live per knob from the status stream. a / b = the two pot halves (gangs), raw ADC 0-1023.
+const noHealth = () => ({ worn: false, fault: 0, diff: 0, a: null, b: null });
+const health = KNOB_NAMES.map(noHealth);
 
 function buildMaintenance() {
+  // data-label: on narrow screens the column heads are hidden and each cell shows its own label
   $("maint").innerHTML =
-    ["Knob", "Calibrated range", "Motor", "Pot halves", "Status", ""].map(h => `<div class="head">${h}</div>`).join("") +
+    ["Knob", "Calibrated range", "Motor", "Half A", "Half B", "Difference", "Status", ""]
+      .map(h => `<div class="head">${h}</div>`).join("") +
     KNOB_NAMES.map((name, k) => `
       <div class="knobname"><small>0${k + 1}</small>${name}</div>
-      <div><span class="val num" id="mRange${k}">—</span><div class="range"><div id="mBar${k}"></div></div></div>
-      <div class="val" id="mDir${k}">—</div>
-      <div class="val num" id="mPot${k}">—</div>
-      <div class="val" id="mStatus${k}">—</div>
+      <div data-label="Calibrated range"><span class="val num" id="mRange${k}">—</span><div class="range"><div id="mBar${k}"></div></div></div>
+      <div class="val" data-label="Motor" id="mDir${k}">—</div>
+      <div class="val num" data-label="Half A" id="mA${k}">—</div>
+      <div class="val num" data-label="Half B" id="mB${k}">—</div>
+      <div class="val num" data-label="Difference" id="mDiff${k}">—</div>
+      <div class="val" data-label="Status" id="mStatus${k}">—</div>
       <div><button class="quiet" id="mCal${k}" disabled>Calibrate</button></div>`).join("");
   KNOB_NAMES.forEach((name, k) => armed($(`mCal${k}`), "Calibrate", () => {
     send(CMD.calibrate, [k]);
@@ -738,18 +747,21 @@ function buildMaintenance() {
 
 function renderMaintenance() {
   KNOB_NAMES.forEach((_, k) => {
-    const cal = settings?.cal[k], h = health[k];
+    const cal = settings?.cal[k], h = health[k], live = h.a !== null;
     $(`mCal${k}`).disabled = !connected();
-    if (!cal) return;
-    $(`mRange${k}`).textContent = `${pad(cal.calLow, 4)} – ${pad(cal.calHigh, 4)}`;
-    $(`mBar${k}`).style.left = `${cal.calLow / 10.23}%`;
-    $(`mBar${k}`).style.width = `${(cal.calHigh - cal.calLow) / 10.23}%`;
-    $(`mDir${k}`).textContent = cal.reverse ? "Reversed" : "Normal";
-    $(`mDir${k}`).className = "val ok";
-    $(`mPot${k}`).textContent = h.worn ? `Worn · Δ ${h.diff}` : `OK · Δ ${h.diff}`;
-    $(`mPot${k}`).className = "val num " + (h.worn ? "warn" : "ok");
-    $(`mStatus${k}`).textContent = h.fault ? FAULT_TEXT[h.fault] : "OK";
+
+    $(`mA${k}`).textContent = live ? h.a : "—";
+    $(`mB${k}`).textContent = live ? h.b : "—";
+    $(`mDiff${k}`).textContent = !live ? "—" : h.worn ? `${h.diff} · Worn` : h.diff;
+    $(`mDiff${k}`).className = "val num" + (h.worn ? " warn" : "");
+    $(`mStatus${k}`).textContent = !live ? "—" : h.fault ? FAULT_TEXT[h.fault] : "OK";
     $(`mStatus${k}`).className = "val " + (h.fault ? "bad-text" : "ok");
+
+    $(`mRange${k}`).textContent = cal ? `${pad(cal.calLow, 4)} – ${pad(cal.calHigh, 4)}` : "—";
+    $(`mBar${k}`).style.left = cal ? `${cal.calLow / 10.23}%` : "0";
+    $(`mBar${k}`).style.width = cal ? `${(cal.calHigh - cal.calLow) / 10.23}%` : "0";
+    $(`mDir${k}`).textContent = cal ? (cal.reverse ? "Reversed" : "Normal") : "—";
+    $(`mDir${k}`).className = "val ok";
   });
 }
 
@@ -811,7 +823,7 @@ function fillPicker() {
 function setConnected(name) {
   const on = !!name;
   ["clearBtn", "calibrateBtn", "resetBtn"].forEach(id => $(id).disabled = !on);
-  if (!on) { draft = null; settings = null; renderParams(); }
+  if (!on) { draft = null; settings = null; renderParams(); health.forEach(h => Object.assign(h, noHealth())); }
   renderMaintenance();
   $("connectBtn").textContent = on ? "Disconnect" : "Connect";
   $("demoBtn").classList.toggle("hidden", on && !demo);
@@ -852,12 +864,21 @@ function disconnect() {
   log("Disconnected");
 }
 
-// Settings, maintenance and log fold open / closed. Remembered per browser.
+// Two views in one page, so the MIDI connection stays up when switching:
+// main page = the four knobs, subpage #settings = settings, maintenance, log.
+function showView() {
+  const onSettings = location.hash === "#settings";
+  $("view-monitor").classList.toggle("hidden", onSettings);
+  $("view-settings").classList.toggle("hidden", !onSettings);
+  $("viewBtn").textContent = onSettings ? "Monitor" : "Settings";
+  window.scrollTo(0, 0);
+}
+
+// Settings, maintenance and log fold open / closed (open by default). Remembered per browser.
 function setupFolds() {
-  const narrow = matchMedia("(max-width: 900px)").matches;
   document.querySelectorAll("h2.fold").forEach(h2 => {
     const name = h2.dataset.fold, body = $(`fold-${name}`);
-    let open = !narrow;
+    let open = true;
     try { const saved = localStorage.getItem(`fold-${name}`); if (saved !== null) open = saved === "1"; } catch (e) {}
     const apply = () => { h2.classList.toggle("closed", !open); body.classList.toggle("closed", !open); };
     h2.addEventListener("click", () => {
@@ -874,6 +895,9 @@ async function start() {
   buildKnobs();
   buildSettings();
   buildMaintenance();
+  showView();
+  window.addEventListener("hashchange", showView);
+  $("viewBtn").onclick = () => { location.hash = location.hash === "#settings" ? "#monitor" : "#settings"; };
   requestAnimationFrame(animate);
   $("connectBtn").onclick = () => (connected() ? disconnect() : connect());
   $("demoBtn").onclick = () => { if (connected()) disconnect(); demo = new DemoController(onMessage); log("Demo: simulated controller"); startSession("MPMOTHER demo"); };
