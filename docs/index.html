@@ -34,17 +34,15 @@
   button { font: inherit; letter-spacing: .14em; text-transform: uppercase; cursor: pointer;
            background: transparent; color: var(--ink); border: 1px solid var(--ink);
            padding: 10px 18px 7px; border-radius: 0; }
-  button:hover:not(:disabled) { background: var(--ink); color: var(--black); }
+  @media (hover: hover) { button:hover:not(:disabled) { background: var(--ink); color: var(--black); } }
   button:disabled { border-color: var(--faint); color: var(--faint); cursor: default; }
   button.armed { background: var(--red); border-color: var(--red); color: var(--black); }
   button.quiet { border-color: var(--faint); color: var(--dim); }
 
   /* ---------- top bar ---------- */
-  .top { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 24px;
-         padding: 40px 0 18px; border-bottom: 1px solid var(--ink); }
-  .wordmark { font-size: clamp(56px, 9vw, 112px); line-height: .8; letter-spacing: .02em; }
-  .wordmark small { display: block; font-size: 13px; letter-spacing: .3em; color: var(--dim); margin-top: 14px; }
-  .device { text-align: right; display: grid; gap: 10px; justify-items: end; }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+         padding: 20px 0 14px; border-bottom: 1px solid var(--ink); }
+
   .device-name { font-size: 22px; letter-spacing: .08em; }
   .device-name .state { color: var(--dim); }
   .device-name .state.on { color: var(--ink); }
@@ -165,6 +163,17 @@
   .actions { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 22px; }
   .actions .gap { flex: 1; }
 
+  /* ---------- foldable sections ---------- */
+  h2.fold { cursor: pointer; user-select: none; }
+  h2.fold:hover { color: var(--ink); }
+  h2.fold i { display: inline-block; width: 11px; height: 11px; margin-left: 14px; position: relative; vertical-align: -1px; }
+  h2.fold i::before, h2.fold i::after { content: ""; position: absolute; background: currentColor; }
+  h2.fold i::before { left: 0; right: 0; top: 5px; height: 1px; }
+  h2.fold i::after  { top: 0; bottom: 0; left: 5px; width: 1px; }
+  h2.fold:not(.closed) i::after { display: none; }      /* minus = open, plus = closed */
+  h2.fold.closed { border-bottom-color: var(--faint); }
+  .foldbody.closed { display: none; }
+
   /* ---------- log ---------- */
   #log { font: 13px/1.7 var(--din); letter-spacing: .12em; color: var(--dim); max-height: 180px;
          overflow: auto; padding-top: 12px; white-space: pre; }
@@ -174,16 +183,37 @@
 
   @media (max-width: 900px) {
     main { padding: 0 16px 60px; }
-    .top { grid-template-columns: 1fr; }
-    .device { justify-items: start; text-align: left; }
-    .system { grid-template-columns: 1fr 1fr; }
-    .system > div:nth-child(3) { padding-left: 0; border-left: 0; }
-    .knob { grid-template-columns: 1fr; }
-    .plot-wrap { border: 0; }
-    .knob .side { padding-left: 0; }
+    .hint-wide { display: none; }
+
+    /* compact monitors, pinned to the top while the rest scrolls */
+    #monitor { position: sticky; top: 0; z-index: 10; background: var(--black);
+               border-bottom: 1px solid var(--ink); margin: 0 -16px; padding: 0 16px; }
+    #monitor h2, #monitor .key { display: none; }
+    #monitor .knob { grid-template-columns: 96px 1fr; }
+    #monitor .knob > * { padding: 6px 0; }
+    #monitor .knob .side, #monitor .index, #monitor .cc-label { display: none; }
+    #monitor .knob .ident { padding-right: 10px; justify-content: center; }
+    #monitor .knob .name { font-size: 14px; letter-spacing: .14em; margin: 0; }
+    #monitor .knob .cc { font-size: 34px; margin-top: 2px; }
+    #monitor .knob .mode { font-size: 11px; letter-spacing: .14em; margin-top: 2px; }
+    #monitor .knob .mode.user { padding: 1px 5px 0; }
+    #monitor .plot-wrap { border-right: 0; }
+    #monitor canvas { height: 64px; }
+
+    .system { grid-template-columns: repeat(4, 1fr); }
+    .system > div { padding: 8px 0 6px; gap: 2px; }
+    .system > div + div { padding-left: 8px; }
+    .system > div:nth-child(3) { padding-left: 8px; border-left: 1px solid var(--faint); }
+    .system .label { font-size: 10px; letter-spacing: .1em; }
+    .system .value { font-size: 15px; }
+    .lamp { width: 7px; height: 7px; margin-right: 5px; vertical-align: 1px; }
+
+    .cells.map { grid-template-columns: 96px 1fr 1fr; }
+    .cells.map > div { grid-row: var(--nr); grid-column: var(--nc); }
+    .savebar { flex-wrap: wrap; }
+    .savebar .sync { flex-basis: 100%; }
     .banks { grid-template-columns: 1fr; }
     .cells.c4 { grid-template-columns: 1fr 1fr; }
-    .cells.map { grid-template-columns: 90px repeat(4, 1fr); }
     .param .p-value { font-size: 32px; }
     .maint { grid-template-columns: 1fr 1fr; }
     .maint .head { display: none; }
@@ -194,9 +224,8 @@
 <main>
 
 <section class="top">
-  <div class="wordmark">MPMOTHER<small>4 motorised pots · midi controller · house of north</small></div>
+  <div class="device-name"><span id="deviceName">No controller</span> · <span class="state" id="deviceState">offline</span></div>
   <div class="device">
-    <div class="device-name"><span id="deviceName">No controller</span> · <span class="state" id="deviceState">offline</span></div>
     <div style="display:flex; gap:10px">
       <button class="quiet" id="demoBtn" title="Simulated controller, to try the page without hardware">Demo</button>
       <button id="connectBtn">Connect</button>
@@ -219,15 +248,19 @@
   <div><span class="label">Firmware</span><span class="value num" id="firmware">—</span></div>
 </section>
 
-<h2><span>Knobs</span><span>last 10 seconds</span></h2>
-<div id="knobs"></div>
-<div class="key">
-  <span><i></i>Knob position</span>
-  <span><i class="target"></i>Where the motor is heading</span>
-  <span><i class="band"></i>Hand on the knob</span>
-</div>
+<!-- The four monitors. On narrow screens this block shrinks and stays pinned to the top. -->
+<section id="monitor">
+  <h2><span>Knobs</span><span>last 10 seconds</span></h2>
+  <div id="knobs"></div>
+  <div class="key">
+    <span><i></i>Knob position</span>
+    <span><i class="target"></i>Where the motor is heading</span>
+    <span><i class="band"></i>Hand on the knob</span>
+  </div>
+</section>
 
-<h2><span>Settings</span><span>drag, scroll or use arrow keys · shift = ×10</span></h2>
+<h2 class="fold" data-fold="settings"><span>Settings</span><span><span class="hint-wide">drag, scroll or arrow keys · shift = ×10</span><i></i></span></h2>
+<div class="foldbody" id="fold-settings">
 <div class="banks">
   <div>
     <div class="bank-title"><b>A</b>MIDI</div>
@@ -245,8 +278,10 @@
   <button class="quiet" id="revertBtn" disabled>Revert</button>
   <button id="saveBtn" disabled>Save to controller</button>
 </div>
+</div>
 
-<h2><span>Maintenance</span><span>calibration · faults</span></h2>
+<h2 class="fold" data-fold="maintenance"><span>Maintenance</span><span><span class="hint-wide">calibration · faults</span><i></i></span></h2>
+<div class="foldbody" id="fold-maintenance">
 <div class="maint" id="maint"></div>
 <div class="actions">
   <button class="quiet" id="calibrateBtn" disabled>Calibrate all</button>
@@ -254,9 +289,10 @@
   <span class="gap"></span>
   <button class="quiet" id="resetBtn" disabled>Factory reset</button>
 </div>
+</div>
 
-<h2><span>Log</span></h2>
-<div id="log"></div>
+<h2 class="fold" data-fold="log"><span>Log</span><span><i></i></span></h2>
+<div class="foldbody" id="fold-log"><div id="log"></div></div>
 
 <footer>
   <span>MPMOTHER V1</span>
@@ -274,7 +310,7 @@ const CMD = { hello: 0x01, getSettings: 0x02, setSettings: 0x03, calibrate: 0x04
 const REPLY = { hello: 0x41, settings: 0x42, status: 0x43 };
 
 const KNOB_NAMES = ["SPACE", "TEXTURE", "MOVEMENT", "SHADOW"];
-const MODE_TEXT  = ["Resting", "Moving to Ableton", "Hand on knob", "Fault"];
+const MODE_TEXT  = ["Resting", "Following", "Hand on knob", "Fault"];
 const MODE_CLASS = ["", "", "user", "fault"];
 const FAULT_TEXT = ["", "Pot halves disagree — motor off", "Turns the wrong way — calibrate", "Motor not moving — check cable"];
 const NO_TARGET = 16383;
@@ -354,7 +390,8 @@ function drawPlot(k) {
   const canvas = $(`plot${k}`);
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth, h = canvas.clientHeight;
-  if (canvas.width !== w * dpr) { canvas.width = w * dpr; canvas.height = h * dpr; }
+  if (canvas.width !== w * dpr || canvas.height !== h * dpr) { canvas.width = w * dpr; canvas.height = h * dpr; }
+  const compact = h < 120;  // narrow-screen monitor strip
   const g = canvas.getContext("2d");
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, w, h);
@@ -362,7 +399,7 @@ function drawPlot(k) {
   const css = getComputedStyle(document.documentElement);
   const INK = css.getPropertyValue("--ink"), DIM = css.getPropertyValue("--dim");
   const HAIR = css.getPropertyValue("--hair"), RED = css.getPropertyValue("--red");
-  const pad = { top: 10, bottom: 26, left: 12, right: 36 };
+  const pad = compact ? { top: 6, bottom: 8, left: 8, right: 30 } : { top: 10, bottom: 26, left: 12, right: 36 };
   const plotW = w - pad.left - pad.right, plotH = h - pad.top - pad.bottom;
   const now = performance.now();
   const x = t => pad.left + plotW * (1 - (now - t) / HISTORY_MS);
@@ -371,7 +408,7 @@ function drawPlot(k) {
   // grid: 0 / 32 / 64 / 96 / 127, labelled on the right
   g.font = `11px ${css.getPropertyValue("--din")}`;
   g.textBaseline = "middle";
-  for (const v of [0, 32, 64, 96, 127]) {
+  for (const v of compact ? [0, 64, 127] : [0, 32, 64, 96, 127]) {
     g.fillStyle = HAIR;
     g.fillRect(pad.left, Math.round(y(v)), plotW, 1);
     g.fillStyle = DIM;
@@ -379,7 +416,7 @@ function drawPlot(k) {
   }
   // one tick per second along the bottom
   g.fillStyle = HAIR;
-  for (let s = 0; s <= 10; s++) g.fillRect(Math.round(pad.left + plotW * s / 10), h - pad.bottom + 4, 1, 5);
+  if (!compact) for (let s = 0; s <= 10; s++) g.fillRect(Math.round(pad.left + plotW * s / 10), h - pad.bottom + 4, 1, 5);
 
   const points = history[k];
   if (points.length < 2) return;
@@ -390,7 +427,8 @@ function drawPlot(k) {
     if (mode !== 2 && mode !== 3) continue;
     g.fillStyle = mode === 3 ? RED : INK;
     const x0 = Math.max(pad.left, x(points[i - 1].t)), x1 = x(points[i].t);
-    g.fillRect(x0, h - 7, x1 - x0 + 0.5, 4);
+    if (compact) g.fillRect(x0, h - 3, x1 - x0 + 0.5, 3);
+    else g.fillRect(x0, h - 7, x1 - x0 + 0.5, 4);
   }
 
   // target: dashed steps
@@ -503,9 +541,10 @@ KNOB_NAMES.forEach((_, k) => {
 });
 let draft = null;
 
-function paramCell(key, withDesc = true) {
+function paramCell(key, withDesc = true, narrowRow = 0, narrowCol = 0) {
   const p = PARAMS[key];
-  return `<div class="param${p.bool ? " bool" : ""}" data-key="${key}" tabindex="0">
+  const place = narrowRow ? ` style="--nr:${narrowRow};--nc:${narrowCol}"` : "";
+  return `<div class="param${p.bool ? " bool" : ""}" data-key="${key}" tabindex="0"${place}>
     <div class="p-label">${p.label}</div>
     <div class="p-value" id="pv-${key}">—</div>
     <div class="p-step">${p.bool ? "" : `<button data-step="1" tabindex="-1">+</button><button data-step="-1" tabindex="-1">−</button>`}</div>
@@ -518,10 +557,13 @@ function buildSettings() {
   $("bankMidi").innerHTML = ["outChannel", "driveChannel", "followFeedback", "dinOut"].map(k => paramCell(k)).join("");
   $("bankMotor").innerHTML = paramCell("maxSpeed");
   $("bankMap").innerHTML =
-    `<div class="colhead"></div>` +
-    KNOB_NAMES.map((name, k) => `<div class="colhead">0${k + 1}<span>${name}</span></div>`).join("") +
-    `<div class="rowhead">Knob sends</div>` + KNOB_NAMES.map((_, k) => paramCell(`outCC${k}`, false)).join("") +
-    `<div class="rowhead">Moved by</div>` + KNOB_NAMES.map((_, k) => paramCell(`driveCC${k}`, false)).join("");
+    // Wide: knobs are columns. Narrow: knobs are rows (positions in --nr / --nc).
+    `<div class="colhead" style="--nr:1;--nc:1"></div>` +
+    KNOB_NAMES.map((name, k) => `<div class="colhead" style="--nr:${k + 2};--nc:1">0${k + 1}<span>${name}</span></div>`).join("") +
+    `<div class="rowhead" style="--nr:1;--nc:2">Knob sends</div>` +
+    KNOB_NAMES.map((_, k) => paramCell(`outCC${k}`, false, k + 2, 2)).join("") +
+    `<div class="rowhead" style="--nr:1;--nc:3">Moved by</div>` +
+    KNOB_NAMES.map((_, k) => paramCell(`driveCC${k}`, false, k + 2, 3)).join("");
 
   document.querySelectorAll(".param").forEach(cell => {
     const key = cell.dataset.key, p = PARAMS[key];
@@ -747,7 +789,25 @@ function disconnect() {
   log("Disconnected");
 }
 
+// Settings, maintenance and log fold open / closed. Remembered per browser.
+function setupFolds() {
+  const narrow = matchMedia("(max-width: 900px)").matches;
+  document.querySelectorAll("h2.fold").forEach(h2 => {
+    const name = h2.dataset.fold, body = $(`fold-${name}`);
+    let open = !narrow;
+    try { const saved = localStorage.getItem(`fold-${name}`); if (saved !== null) open = saved === "1"; } catch (e) {}
+    const apply = () => { h2.classList.toggle("closed", !open); body.classList.toggle("closed", !open); };
+    h2.addEventListener("click", () => {
+      open = !open;
+      apply();
+      try { localStorage.setItem(`fold-${name}`, open ? "1" : "0"); } catch (e) {}
+    });
+    apply();
+  });
+}
+
 async function start() {
+  setupFolds();
   buildKnobs();
   buildSettings();
   buildMaintenance();
