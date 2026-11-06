@@ -22,41 +22,57 @@
     --din: "DIN Condensed", "DIN Alternate", "Barlow Condensed", "Arial Narrow", sans-serif;
     --gutter: 28px;       /* page side margin, 16 px on narrow screens */
     --quarter-min: 260px; /* smallest height of one knob quarter before the page scrolls */
+
+    /* Type scale, like the legends on 70s lab equipment: few sizes, one tracking per role.
+       Captions are small and widely spaced (engraved), readings get tighter as they get bigger. */
+    --fs-micro: 10px;     /* captions on small screens */
+    --fs-caption: 12px;   /* every label, column head, section head */
+    --fs-text: 15px;      /* buttons, messages, mode, log */
+    --fs-reading: 20px;   /* status values, table values, names in lists */
+    --fs-name: 28px;      /* knob names on the main page */
+    --fs-value: 46px;     /* setting values */
+    --fs-display: 84px;   /* knob values on the main page */
+    --tr-caption: .2em;
+    --tr-text: .12em;
+    --tr-reading: .08em;
+    --tr-display: .02em;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { background: var(--black); color: var(--ink); }
-  body { font: 17px/1.25 var(--din); letter-spacing: .04em; text-transform: uppercase;
+  body { font: var(--fs-text)/1.3 var(--din); letter-spacing: var(--tr-text); text-transform: uppercase;
          -webkit-font-smoothing: antialiased; }
   /* main fills the screen so the four knob quarters can share the height */
   main { max-width: 1280px; margin: 0 auto; padding: 0 var(--gutter) 24px;
          min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
   .hidden { display: none !important; }
 
-  /* ---------- labels and numbers ---------- */
-  .label { font-size: 13px; letter-spacing: .18em; color: var(--dim); }
-  .num { font-variant-numeric: tabular-nums; }
+  /* ---------- type roles ---------- */
+  .label, h2, .key, .bank-title, .rowhead, .colhead, .param .p-label, .maint .head, .maint .knobname small,
+  .knob .cc-label, footer {
+    font-size: var(--fs-caption); letter-spacing: var(--tr-caption); color: var(--dim); font-weight: normal; }
+  .num, .knob .cc, .param .p-value, .maint .val, .system .value { font-variant-numeric: tabular-nums; }
 
   /* ---------- buttons: hard edges, invert on hover ---------- */
-  button { font: inherit; letter-spacing: .14em; text-transform: uppercase; cursor: pointer;
+  button { font: inherit; letter-spacing: var(--tr-text); text-transform: uppercase; cursor: pointer;
            background: transparent; color: var(--ink); border: 1px solid var(--ink);
            padding: 10px 18px 7px; border-radius: 0; }
   @media (hover: hover) { button:hover:not(:disabled) { background: var(--ink); color: var(--black); } }
-  button:disabled { border-color: var(--faint); color: var(--faint); cursor: default; }
-  button.armed { background: var(--red); border-color: var(--red); color: var(--black); }
   button.quiet { border-color: var(--faint); color: var(--dim); }
+  button:disabled, button.quiet:disabled { border-color: var(--faint); color: var(--faint); cursor: default; }
+  button.armed { background: var(--red); border-color: var(--red); color: var(--black); }
 
   /* ---------- top bar ---------- */
   .top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
          padding: 20px 0 14px; border-bottom: 1px solid var(--ink); }
 
-  .device-name { font-size: 22px; letter-spacing: .08em; }
+  .device-name { font-size: var(--fs-reading); letter-spacing: var(--tr-text); }
   .device-name .state { color: var(--dim); }
   .device-name .state.on { color: var(--ink); }
 
   /* device picker, only shown when MPMOTHER is not found automatically */
   .picker { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; align-items: center;
             padding: 18px 0; border-bottom: 1px solid var(--faint); }
-  select { font: inherit; letter-spacing: .08em; text-transform: uppercase; color: var(--ink);
+  select { font: inherit; letter-spacing: inherit; text-transform: uppercase; color: var(--ink);
            background: var(--black); border: 0; border-bottom: 1px solid var(--dim);
            padding: 4px 0 2px; border-radius: 0; appearance: none; min-width: 260px; }
 
@@ -66,16 +82,15 @@
   .system { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--faint); }
   .system > div { padding: 14px 0 12px; display: flex; flex-direction: column; gap: 6px; }
   .system > div + div { padding-left: 18px; border-left: 1px solid var(--faint); }
-  .system .value { font-size: 24px; }
-  .lamp { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--faint); margin-right: 10px;
+  .system .value { font-size: var(--fs-reading); letter-spacing: var(--tr-reading); }
+  .lamp { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--faint); margin-right: 10px;
           vertical-align: 2px; }
   .lamp.on { background: var(--lamp); box-shadow: 0 0 6px 1px rgba(255, 138, 30, .55); }
   .lamp.bad { background: var(--red); }
   .bad-text { color: var(--red); }
 
   /* ---------- section headings ---------- */
-  h2 { font-weight: normal; font-size: 13px; letter-spacing: .3em; color: var(--dim);
-       padding: 44px 0 12px; border-bottom: 1px solid var(--ink); display: flex; justify-content: space-between; }
+  h2 { padding: 44px 0 12px; border-bottom: 1px solid var(--ink); display: flex; justify-content: space-between; }
 
   /* ---------- main page: the four knobs, 2x2 like the front panel, filling the screen ----------
      SPACE / TEXTURE over MOVEMENT / SHADOW. Each quarter: name + value left, plot right, message + Move below. */
@@ -89,13 +104,13 @@
   .knob:nth-child(even) { padding: 20px 0 18px 20px; }
   .knob:nth-child(odd) { border-right: 1px solid var(--faint); }
   .knob:nth-child(-n+2) { border-bottom: 1px solid var(--faint); }
+  /* name, value and its CH / CC on top; mode at the bottom */
   .knob .ident { grid-area: ident; display: flex; flex-direction: column; justify-content: space-between;
                  min-height: 0; overflow: hidden; }
-  .knob .index { font-size: 13px; letter-spacing: .3em; color: var(--dim); }
-  .knob .name { font-size: 30px; letter-spacing: .1em; margin-top: 2px; }
-  .knob .cc { font-size: 84px; line-height: .85; margin-top: 10px; }
-  .knob .cc-label { font-size: 13px; letter-spacing: .18em; color: var(--dim); margin-top: 6px; }
-  .knob .mode { font-size: 18px; letter-spacing: .2em; margin-top: 14px; }
+  .knob .name { font-size: var(--fs-name); letter-spacing: var(--tr-text); line-height: 1; }
+  .knob .cc { font-size: var(--fs-display); letter-spacing: var(--tr-display); line-height: .85; margin-top: 14px; }
+  .knob .cc-label { margin-top: 8px; }
+  .knob .mode { font-size: var(--fs-text); letter-spacing: var(--tr-caption); margin-top: 14px; }
   .knob .mode.fault { color: var(--red); }
   .knob .mode.user { color: var(--black); background: var(--ink); align-self: flex-start; padding: 3px 8px 0; }
   /* panel screws in the corners, like a 70s modular front panel */
@@ -112,8 +127,9 @@
   canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
   .knob .msg { grid-area: msg; align-self: end; }
   .knob .move { grid-area: move; }
+  .knob .move .label { display: block; margin-bottom: 2px; }
   .warn { color: var(--amber); }
-  .msg { font-size: 14px; letter-spacing: .12em; min-height: 18px; }
+  .msg { min-height: 18px; }
 
   /* drive fader: a hairline with a square cap */
   input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px;
@@ -126,16 +142,15 @@
   input[type=range]:disabled { opacity: .3; cursor: default; }
 
   /* plot key */
-  .key { display: flex; flex-wrap: wrap; gap: 6px 26px; font-size: 13px; letter-spacing: .18em; color: var(--dim); padding: 12px 0 0; }
-  .key i { display: inline-block; width: 22px; height: 0; border-top: 2px solid var(--ink); vertical-align: 4px; margin-right: 8px; }
+  .key { display: flex; flex-wrap: wrap; gap: 6px 26px; padding: 12px 0 0; }
+  .key i { display: inline-block; width: 22px; height: 0; border-top: 2px solid var(--ink); vertical-align: 3px; margin-right: 8px; }
   .key i.target { border-top: 1px dashed var(--ink); }
-  .key i.band { height: 8px; border: 0; background: var(--ink); vertical-align: 1px; }
+  .key i.band { height: 8px; border: 0; background: var(--ink); vertical-align: 0; }
 
   /* ---------- settings: hardware-editor parameter banks ---------- */
   .banks { display: grid; grid-template-columns: 2fr 1fr; gap: 0 28px; }
-  .bank-title { display: flex; gap: 12px; align-items: baseline; padding: 18px 0 10px;
-                font-size: 13px; letter-spacing: .3em; color: var(--dim); }
-  .bank-title b { font-weight: normal; color: var(--black); background: var(--dim); padding: 2px 6px 0; letter-spacing: .1em; }
+  .bank-title { display: flex; gap: 12px; align-items: baseline; padding: 18px 0 10px; }
+  .bank-title b { font-weight: normal; color: var(--black); background: var(--dim); padding: 2px 6px 0; letter-spacing: 0; }
   .banks > div { display: flex; flex-direction: column; }
   .banks .cells { flex: 1; }
   .cells { display: grid; gap: 1px; background: var(--faint); border: 1px solid var(--faint); }
@@ -145,24 +160,23 @@
   .cells.map { grid-template-columns: 130px repeat(4, 1fr); }
   .cells.map > div { grid-row: var(--wr); grid-column: var(--wc); }
   .cells > div { background: var(--black); }
-  .rowhead, .colhead { padding: 12px 14px 8px; font-size: 13px; letter-spacing: .2em; color: var(--dim);
-                       display: flex; flex-direction: column; justify-content: center; }
-  .colhead span { color: var(--ink); font-size: 18px; letter-spacing: .12em; margin-top: 2px; }
+  .rowhead, .colhead { padding: 12px 14px 8px; display: flex; flex-direction: column; justify-content: center; }
+  .colhead span { color: var(--ink); font-size: var(--fs-reading); letter-spacing: var(--tr-reading); margin-top: 4px; }
 
   .param { position: relative; padding: 12px 14px 12px; user-select: none; cursor: ns-resize; outline: none;
            display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto auto; column-gap: 8px; }
   .param:focus-visible { box-shadow: inset 0 0 0 1px var(--ink); }
-  .param .p-label { grid-column: 1 / -1; font-size: 13px; letter-spacing: .22em; color: var(--dim); }
-  .param .p-value { font-size: 46px; line-height: 1; letter-spacing: .02em; padding-top: 8px; min-height: 57px;
-                    font-variant-numeric: tabular-nums; }
+  .param .p-label { grid-column: 1 / -1; }
+  .param .p-value { font-size: var(--fs-value); line-height: 1; letter-spacing: var(--tr-display); padding-top: 8px; min-height: 57px; }
   .param .p-step { display: flex; flex-direction: column; justify-content: flex-end; gap: 1px; }
   .param .p-step button { width: 30px; height: 24px; padding: 0; border-color: var(--faint); color: var(--dim);
                           font-size: 18px; letter-spacing: 0; line-height: 24px; }
   .param .p-step button:hover { background: var(--ink); color: var(--black); border-color: var(--ink); }
   .param .p-meter { grid-column: 1 / -1; height: 2px; background: var(--hair); margin-top: 10px; }
   .param .p-meter div { height: 100%; background: var(--dim); }
-  .param .p-desc { grid-column: 1 / -1; font-size: 12px; letter-spacing: .14em; color: var(--dim); margin-top: 8px;
-                   text-transform: none; }
+  /* descriptions are the only sentence-case text: small, plain, no tracking games */
+  .param .p-desc { grid-column: 1 / -1; font-size: var(--fs-caption); letter-spacing: .04em; color: var(--dim);
+                   margin-top: 8px; text-transform: none; }
   .param.bool { cursor: pointer; }
   .param .rocker { display: none; }
   .param.bool .rocker { display: flex; flex-direction: column; width: 18px; height: 34px; align-self: end;
@@ -178,21 +192,21 @@
   .param.disabled .p-value { color: var(--faint); }
 
   .savebar { display: flex; align-items: center; gap: 12px; padding: 18px 0 0; }
-  .savebar .sync { flex: 1; font-size: 15px; letter-spacing: .18em; color: var(--dim); }
+  .savebar .sync { flex: 1; letter-spacing: var(--tr-caption); color: var(--dim); }
   .savebar .sync.dirty { color: var(--amber); }
 
   /* ---------- maintenance ---------- */
   .maint { display: grid; grid-template-columns: 160px 1.4fr .8fr .6fr .6fr .9fr 1.5fr 130px; }
   .maint > div { padding: 14px 12px 12px 0; border-bottom: 1px solid var(--faint); display: flex;
                  flex-direction: column; justify-content: center; gap: 6px; }
-  .maint .head { font-size: 13px; letter-spacing: .2em; color: var(--dim); padding-top: 10px; padding-bottom: 8px; }
-  .maint .knobname { font-size: 20px; letter-spacing: .12em; }
-  .maint .knobname small { display: block; font-size: 13px; letter-spacing: .3em; color: var(--dim); }
-  .maint .val { font-size: 20px; }
+  .maint .head { padding-top: 10px; padding-bottom: 8px; }
+  .maint .knobname { font-size: var(--fs-reading); letter-spacing: var(--tr-reading); }
+  .maint .knobname small { display: block; }
+  .maint .val { font-size: var(--fs-reading); letter-spacing: var(--tr-reading); }
   .maint .ok { color: var(--dim); }
   .range { position: relative; height: 4px; background: var(--hair); }
   .range div { position: absolute; top: 0; bottom: 0; background: var(--ink); }
-  .maint button { padding: 7px 12px 5px; font-size: 14px; }
+  .maint button { padding: 7px 12px 5px; font-size: var(--fs-caption); }
   .actions { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 22px; }
   .actions .gap { flex: 1; }
 
@@ -208,10 +222,9 @@
   .foldbody.closed { display: none; }
 
   /* ---------- log ---------- */
-  #log { font: 13px/1.7 var(--din); letter-spacing: .12em; color: var(--dim); max-height: 180px;
+  #log { font-size: var(--fs-caption); line-height: 1.8; color: var(--dim); max-height: 180px;
          overflow: auto; padding-top: 12px; white-space: pre; }
-  footer { margin-top: 64px; padding-top: 14px; border-top: 1px solid var(--faint);
-           font-size: 13px; letter-spacing: .2em; color: var(--dim); display: flex; justify-content: space-between; }
+  footer { margin-top: 64px; padding-top: 14px; border-top: 1px solid var(--faint); display: flex; justify-content: space-between; }
   footer a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--faint); }
 
   /* ---------- compact quarters: phones (narrow) and anything short (phones in landscape) ----------
@@ -222,15 +235,15 @@
     .knob { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
             grid-template-areas: "ident" "plot" "move"; gap: 6px; padding: 0 10px 10px 0; }
     .knob:nth-child(even) { padding: 0 0 10px 10px; }
-    .knob .index, .knob .cc-label, .knob .msg { display: none; }
+    .knob .cc-label, .knob .msg { display: none; }
     .knob .ident { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "name cc" "mode cc";
                    align-items: end; padding-top: 16px; }  /* clears the panel screws */
     .knob .ident > div:first-child { display: contents; }
-    .knob .name { grid-area: name; font-size: 14px; letter-spacing: .14em; margin: 0; }
+    .knob .name { grid-area: name; font-size: var(--fs-text); margin: 0; }
     .knob .cc { grid-area: cc; font-size: 34px; margin: 0; }
-    .knob .mode { grid-area: mode; justify-self: start; font-size: 11px; letter-spacing: .14em; margin-top: 2px; }
-    .knob .mode.user { padding: 1px 5px 0; }
-    .knob .move .label { font-size: 11px; letter-spacing: .1em; }
+    .knob .mode { grid-area: mode; justify-self: start; font-size: var(--fs-micro); margin-top: 4px; }
+    .knob .mode.user { padding: 2px 5px 0; }
+    .knob .move .label { font-size: var(--fs-micro); }
   }
   /* short screens (phones in landscape): just name, value and plot */
   @media (max-height: 560px) {
@@ -245,9 +258,8 @@
     .system { grid-template-columns: repeat(4, 1fr); }
     .system > div { padding: 8px 0 6px; gap: 2px; }
     .system > div + div { padding-left: 8px; }
-    .system > div:nth-child(3) { padding-left: 8px; border-left: 1px solid var(--faint); }
-    .system .label { font-size: 10px; letter-spacing: .1em; }
-    .system .value { font-size: 15px; }
+    .system .label { font-size: var(--fs-micro); letter-spacing: .1em; }
+    .system .value { font-size: var(--fs-text); }
     .lamp { width: 7px; height: 7px; margin-right: 5px; vertical-align: 1px; }
 
     .cells.map { grid-template-columns: 96px 1fr 1fr; }
@@ -255,10 +267,11 @@
     .savebar { flex-wrap: wrap; }
     .savebar .sync { flex-basis: 100%; }
     .banks { grid-template-columns: 1fr; }
-    .param .p-value { font-size: 32px; }
+    .param .p-value { font-size: 34px; }
     .maint { grid-template-columns: 1fr 1fr; }
     .maint .head { display: none; }
-    .maint > div[data-label]::before { content: attr(data-label); font-size: 10px; letter-spacing: .2em; color: var(--dim); }
+    .maint > div[data-label]::before { content: attr(data-label); font-size: var(--fs-micro);
+                                       letter-spacing: var(--tr-caption); color: var(--dim); }
   }
 </style>
 </head>
@@ -399,7 +412,6 @@ function buildKnobs() {
     <div class="knob">
       <div class="ident">
         <div>
-          <div class="index">Module 90${k + 1}</div>
           <div class="name">${name}</div>
           <div class="cc num" id="cc${k}">—</div>
           <div class="cc-label" id="ccLabel${k}">CC value</div>
@@ -469,7 +481,7 @@ function drawPlot(k) {
     if (compact && !major) continue;
     g.fillRect(scaleX, Math.round(y(127 * i / 20)), major ? 6 : 3, 1);
   }
-  g.font = `11px ${css.getPropertyValue("--din")}`;
+  g.font = `${css.getPropertyValue("--fs-micro")} ${css.getPropertyValue("--din")}`;
   g.textBaseline = "middle";
   if (!tiny) for (const v of [0, 64, 127]) g.fillText(v, scaleX + 10, y(v) + 1);
   // one tick per second along the bottom
