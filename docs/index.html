@@ -93,13 +93,14 @@
   h2 { padding: 44px 0 12px; border-bottom: 1px solid var(--ink); display: flex; justify-content: space-between; }
 
   /* ---------- main page: the four knobs, 2x2 like the front panel, filling the screen ----------
-     SPACE / TEXTURE over MOVEMENT / SHADOW. Each quarter: name + value left, plot right, message + Move below. */
+     SPACE / TEXTURE over MOVEMENT / SHADOW. Each quarter: name + value left, plot right.
+     The plot's 0-127 scale is the Move fader; its handle is the head of the line. */
   #view-monitor { flex: 1; display: flex; flex-direction: column; }
   #monitor { flex: 1; display: flex; flex-direction: column; border-top: 1px solid var(--ink); margin-top: 20px; }
   #knobs { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
            grid-template-rows: repeat(2, minmax(var(--quarter-min), 1fr)); }
-  .knob { display: grid; grid-template-columns: 170px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto;
-          grid-template-areas: "ident plot" "msg move"; gap: 14px 20px; min-width: 0; min-height: 0;
+  .knob { display: grid; grid-template-columns: 170px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+          grid-template-areas: "ident plot"; gap: 14px 20px; min-width: 0; min-height: 0;
           padding: 20px 20px 18px 0; }
   .knob:nth-child(even) { padding: 20px 0 18px 20px; }
   .knob:nth-child(odd) { border-right: 1px solid var(--faint); }
@@ -110,7 +111,9 @@
   .knob .name { font-size: var(--fs-name); letter-spacing: var(--tr-text); line-height: 1; }
   .knob .cc { font-size: var(--fs-display); letter-spacing: var(--tr-display); line-height: .85; margin-top: 14px; }
   .knob .cc-label { margin-top: 8px; }
-  .knob .mode { font-size: var(--fs-text); letter-spacing: var(--tr-caption); margin-top: 14px; }
+  .knob .cc-label + .cc-label { margin-top: 3px; }
+  .knob .msg { margin-top: 6px; }
+  .knob .mode { font-size: var(--fs-text); letter-spacing: var(--tr-caption); margin-top: 14px; width: fit-content; }
   .knob .mode.fault { color: var(--red); }
   .knob .mode.user { color: var(--black); background: var(--ink); align-self: flex-start; padding: 3px 8px 0; }
   /* panel screws in the corners, like a 70s modular front panel */
@@ -125,21 +128,14 @@
   /* the canvas fills whatever space the quarter leaves for it */
   .plot-wrap { grid-area: plot; position: relative; min-height: 50px; }
   canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
-  .knob .msg { grid-area: msg; align-self: end; }
-  .knob .move { grid-area: move; }
-  .knob .move .label { display: block; margin-bottom: 2px; }
+  /* Move fader: an invisible strip over the scale. The handle itself is drawn on the canvas
+     (as the head of the line), so it always sits where the knob is. */
+  .fader { position: absolute; top: 0; bottom: 0; right: 0; width: 56px; cursor: ns-resize;
+           touch-action: none; outline: none; }
+  .fader.off { cursor: default; }
+  .fader:focus-visible { box-shadow: inset 1px 0 0 var(--dim); }
   .warn { color: var(--amber); }
   .msg { min-height: 18px; }
-
-  /* drive fader: a hairline with a square cap */
-  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px;
-                      background: transparent; cursor: pointer; }
-  input[type=range]::-webkit-slider-runnable-track { height: 1px; background: var(--dim); }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 22px;
-                      background: var(--ink); margin-top: -11px; border: 0; }
-  input[type=range]::-moz-range-track { height: 1px; background: var(--dim); }
-  input[type=range]::-moz-range-thumb { width: 12px; height: 22px; background: var(--ink); border: 0; border-radius: 0; }
-  input[type=range]:disabled { opacity: .3; cursor: default; }
 
   /* plot key */
   .key { display: flex; flex-wrap: wrap; gap: 6px 26px; padding: 12px 0 0; }
@@ -228,27 +224,25 @@
   footer a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--faint); }
 
   /* ---------- compact quarters: phones (narrow) and anything short (phones in landscape) ----------
-     Name + mode left, value right, plot underneath, Move slider at the bottom. */
+     Name + mode left, value right, plot (with its fader) underneath. */
   @media (max-width: 700px), (max-height: 560px) {
     :root { --quarter-min: 130px; }
     #monitor { margin-top: 12px; }
-    .knob { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
-            grid-template-areas: "ident" "plot" "move"; gap: 6px; padding: 0 10px 10px 0; }
+    .knob { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
+            grid-template-areas: "ident" "plot"; gap: 6px; padding: 0 10px 10px 0; }
     .knob:nth-child(even) { padding: 0 0 10px 10px; }
     .knob .cc-label, .knob .msg { display: none; }
     .knob .ident { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "name cc" "mode cc";
                    align-items: end; padding-top: 16px; }  /* clears the panel screws */
-    .knob .ident > div:first-child { display: contents; }
+    .knob .ident > div { display: contents; }
     .knob .name { grid-area: name; font-size: var(--fs-text); margin: 0; }
     .knob .cc { grid-area: cc; font-size: 34px; margin: 0; }
     .knob .mode { grid-area: mode; justify-self: start; font-size: var(--fs-micro); margin-top: 4px; }
     .knob .mode.user { padding: 2px 5px 0; }
-    .knob .move .label { font-size: var(--fs-micro); }
   }
-  /* short screens (phones in landscape): just name, value and plot */
+  /* short screens (phones in landscape): no plot key */
   @media (max-height: 560px) {
-    .knob { grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "ident" "plot"; }
-    .knob .move, #monitor .key { display: none; }
+    #monitor .key { display: none; }
   }
 
   @media (max-width: 900px) {
@@ -405,7 +399,7 @@ function send(command, data = []) {
 const connected = () => !!(output || demo);
 
 // ===========================================================================
-// Knob monitors: four across, one quarter each. Pot halves A / B live in Maintenance.
+// Knob monitors: 2x2, one quarter each. Pot halves A / B live in Maintenance.
 // ===========================================================================
 function buildKnobs() {
   $("knobs").innerHTML = KNOB_NAMES.map((name, k) => `
@@ -414,25 +408,77 @@ function buildKnobs() {
         <div>
           <div class="name">${name}</div>
           <div class="cc num" id="cc${k}">—</div>
-          <div class="cc-label" id="ccLabel${k}">CC value</div>
+          <div class="cc-label" id="ccLabel${k}">Sends —</div>
+          <div class="cc-label" id="moveLabel${k}">Moved by —</div>
         </div>
-        <div class="mode" id="mode${k}">—</div>
+        <div>
+          <div class="mode" id="mode${k}">—</div>
+          <div class="msg" id="msg${k}"></div>
+        </div>
       </div>
-      <div class="plot-wrap"><canvas id="plot${k}"></canvas></div>
-      <div class="msg" id="msg${k}"></div>
-      <div class="move">
-        <div class="label" id="driveLabel${k}">Move</div>
-        <input type="range" min="0" max="127" value="64" id="drive${k}" disabled>
+      <div class="plot-wrap">
+        <canvas id="plot${k}"></canvas>
+        <div class="fader off" id="fader${k}" tabindex="0" role="slider" aria-orientation="vertical"
+             aria-valuemin="0" aria-valuemax="127" aria-label="Move ${name}"></div>
       </div>
     </div>`).join("");
+  KNOB_NAMES.forEach((_, k) => setupFader(k));
+}
 
-  KNOB_NAMES.forEach((_, k) => {
-    $(`drive${k}`).addEventListener("input", e => {
-      const ch = settings?.driveChannel[k];
-      if (!ch) return;   // 0 = this knob is not moved by MIDI
-      sendRaw([0xB0 | (ch - 1), settings.driveCC[k], Number(e.target.value)]);
-    });
+// ---------------------------------------------------------------------------
+// Move fader: drag the head of the line (on the 0-127 scale) to move the knob.
+// Sends the knob's moved-by CH + CC. While dragging, the handle follows the finger
+// and the line catches up; afterwards the handle rides on the knob's real position.
+// ---------------------------------------------------------------------------
+const HOLD_AFTER_DRAG_MS = 300;    // keep the handle where it was let go, then hand back to the knob
+const fader = KNOB_NAMES.map(() => ({ dragging: false, hover: false, value: null, sent: null, holdUntil: 0 }));
+const plotGeom = KNOB_NAMES.map(() => null);   // plot area of the last draw: { top, height }
+
+const canMove = k => connected() && !!settings?.driveChannel[k];
+const headValue = k => history[k].length ? history[k][history[k].length - 1].pos : null;
+
+function faderValueAt(k, clientY) {
+  const geom = plotGeom[k];
+  if (!geom) return null;
+  const top = $(`plot${k}`).getBoundingClientRect().top + geom.top;
+  return Math.round(Math.min(127, Math.max(0, 127 * (1 - (clientY - top) / geom.height))));
+}
+
+function moveKnob(k, value) {
+  const f = fader[k];
+  f.value = value;
+  if (value === null || value === f.sent || !canMove(k)) return;
+  f.sent = value;
+  sendRaw([0xB0 | (settings.driveChannel[k] - 1), settings.driveCC[k], value]);
+}
+
+function setupFader(k) {
+  const el = $(`fader${k}`), f = fader[k];
+  el.addEventListener("pointerdown", e => {
+    if (!canMove(k)) return;
+    e.preventDefault();
+    try { el.setPointerCapture(e.pointerId); } catch (err) {}   // keeps the drag when the pointer leaves the strip
+    Object.assign(f, { dragging: true, sent: null });
+    moveKnob(k, faderValueAt(k, e.clientY));
   });
+  el.addEventListener("pointermove", e => { if (f.dragging) moveKnob(k, faderValueAt(k, e.clientY)); });
+  const release = () => { if (f.dragging) Object.assign(f, { dragging: false, holdUntil: performance.now() + HOLD_AFTER_DRAG_MS }); };
+  el.addEventListener("pointerup", release);
+  el.addEventListener("pointercancel", release);
+  el.addEventListener("pointerenter", () => f.hover = true);
+  el.addEventListener("pointerleave", () => f.hover = false);
+  el.addEventListener("keydown", e => {   // arrows step 1, shift = 10
+    const dir = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[e.key];
+    if (!dir || !canMove(k)) return;
+    e.preventDefault();
+    const from = performance.now() < f.holdUntil && f.value !== null ? f.value : Math.round(headValue(k) ?? 64);
+    moveKnob(k, Math.min(127, Math.max(0, from + dir * (e.shiftKey ? 10 : 1))));
+    f.holdUntil = performance.now() + HOLD_AFTER_DRAG_MS * 2;
+  });
+}
+
+function updateFaders() {
+  KNOB_NAMES.forEach((_, k) => $(`fader${k}`).classList.toggle("off", !canMove(k)));
 }
 
 // ADC reading -> 0..127 using the calibrated range
@@ -466,6 +512,7 @@ function drawPlot(k) {
   const now = performance.now();
   const x = t => pad.left + plotW * (1 - (now - t) / HISTORY_MS);
   const y = v => pad.top + plotH * (1 - v / 127);
+  plotGeom[k] = { top: pad.top, height: plotH };   // for the fader: pointer y -> value
 
   // grid lines at 0 / 32 / 64 / 96 / 127
   for (const v of compact ? [0, 64, 127] : [0, 32, 64, 96, 127]) {
@@ -514,16 +561,33 @@ function drawPlot(k) {
   g.setLineDash([]);
 
   // position
-  g.strokeStyle = points[points.length - 1].mode === 3 ? RED : INK;
+  const last = points[points.length - 1];
+  const lineColor = last.mode === 3 ? RED : INK;
+  g.strokeStyle = lineColor;
   g.lineWidth = 1.6; g.lineJoin = "round";
   g.beginPath();
   points.forEach((p, i) => i ? g.lineTo(x(p.t), y(p.pos)) : g.moveTo(x(p.t), y(p.pos)));
+  g.lineTo(scaleX, y(last.pos));   // the line runs into the scale, where its head is
   g.stroke();
 
-  // live dot at the right edge
-  const last = points[points.length - 1];
-  g.fillStyle = g.strokeStyle;
-  g.fillRect(x(last.t) - 3, y(last.pos) - 3, 6, 6);
+  // where the motor is heading: an empty marker on the scale
+  if (last.target !== null && Math.abs(last.target - last.pos) > 2) {
+    g.strokeStyle = DIM; g.lineWidth = 1;
+    g.strokeRect(Math.round(scaleX - 7) + .5, Math.round(y(last.target) - 2) + .5, 14, 4);
+  }
+
+  // the head of the line = the Move fader's handle: a flat cap across the scale.
+  // While dragging (and a moment after) it sits under the finger; otherwise on the knob's position.
+  const f = fader[k];
+  const held = (f.dragging || now < f.holdUntil) && f.value !== null;
+  const capValue = held ? f.value : last.pos;
+  const capW = tiny ? 12 : f.dragging ? 22 : f.hover && canMove(k) ? 20 : 16;
+  const capH = f.dragging ? 6 : 4;
+  g.fillStyle = lineColor;
+  g.fillRect(Math.round(scaleX - capW / 2), Math.round(y(capValue) - capH / 2), capW, capH);
+
+  const valueNow = String(Math.round(capValue)), el = $(`fader${k}`);
+  if (el.getAttribute("aria-valuenow") !== valueNow) el.setAttribute("aria-valuenow", valueNow);
 }
 
 function animate() {
@@ -714,10 +778,10 @@ function showSettings(s) {
   draft = flatten(s);
   renderParams();
   KNOB_NAMES.forEach((_, k) => {
-    $(`ccLabel${k}`).textContent = `CH ${s.outChannel[k]} · CC ${s.outCC[k]}`;
-    $(`driveLabel${k}`).textContent = s.driveChannel[k] ? `Move · CH ${s.driveChannel[k]} · CC ${s.driveCC[k]}` : "Move · off";
-    $(`drive${k}`).disabled = !s.driveChannel[k];
+    $(`ccLabel${k}`).textContent = `Sends CH ${s.outChannel[k]} · CC ${s.outCC[k]}`;
+    $(`moveLabel${k}`).textContent = s.driveChannel[k] ? `Moved by CH ${s.driveChannel[k]} · CC ${s.driveCC[k]}` : "Moved by: off";
   });
+  updateFaders();
   renderMaintenance();
 }
 
@@ -837,6 +901,7 @@ function setConnected(name) {
   ["clearBtn", "calibrateBtn", "resetBtn"].forEach(id => $(id).disabled = !on);
   if (!on) { draft = null; settings = null; renderParams(); health.forEach(h => Object.assign(h, noHealth())); }
   renderMaintenance();
+  updateFaders();
   $("connectBtn").textContent = on ? "Disconnect" : "Connect";
   $("demoBtn").classList.toggle("hidden", on && !demo);
   $("deviceName").textContent = name || "No controller";
