@@ -2,17 +2,15 @@
 
 // ---- tuning ----
 const int      GLITCH_JUMP     = 400;   // a single jump bigger than this is treated as noise
-const int      WORN_MISMATCH   = 30;    // gangs differ by more than this -> pot is getting worn
 const int      BROKEN_MISMATCH = 150;   // gangs differ by more than this -> something is wrong
-const uint32_t WORN_AFTER_MS   = 1000;  // ...for at least this long
-const uint32_t BROKEN_AFTER_MS = 500;
+const uint32_t BROKEN_AFTER_MS = 500;   // ...for at least this long
 const float    SMOOTHING       = 0.3f;  // 0..1, higher = faster but noisier
 
 struct Pot {
   float    a = 0, b = 0;        // smoothed gang readings
   uint8_t  glitchesA = 0, glitchesB = 0;
-  uint32_t wornSince = 0, brokenSince = 0;
-  bool     worn = false, broken = false;
+  uint32_t brokenSince = 0;
+  bool     broken = false;
 };
 static Pot pots[NUM_KNOBS];
 
@@ -38,24 +36,13 @@ void readPots() {
     Pot &p = pots[k];
     filterGang(p.a, p.glitchesA, analogRead(PIN_WIPER_A[k]));
 
-    // Gang A only: B copies A, so nothing to compare and no wear check.
+    // Gang A only: B copies A, so nothing to compare.
     if (!READ_GANG_B) { p.b = p.a; continue; }
 
     filterGang(p.b, p.glitchesB, analogRead(PIN_WIPER_B[k]));
 
-    int diff = wiperMismatch(k);
-
-    // Worn: warning that comes and goes.
-    if (diff > WORN_MISMATCH) {
-      if (p.wornSince == 0) p.wornSince = now;
-      if (now - p.wornSince > WORN_AFTER_MS) p.worn = true;
-    } else {
-      p.wornSince = 0;
-      if (diff < WORN_MISMATCH / 2) p.worn = false;
-    }
-
     // Broken: stays set until reboot or "clear faults".
-    if (diff > BROKEN_MISMATCH) {
+    if (wiperMismatch(k) > BROKEN_MISMATCH) {
       if (p.brokenSince == 0) p.brokenSince = now;
       if (now - p.brokenSince > BROKEN_AFTER_MS) p.broken = true;
     } else {
@@ -68,7 +55,6 @@ int  potPosition(uint8_t k)   { return (int)((pots[k].a + pots[k].b) * 0.5f + 0.
 int  wiperA(uint8_t k)        { return (int)pots[k].a; }
 int  wiperB(uint8_t k)        { return (int)pots[k].b; }
 int  wiperMismatch(uint8_t k) { return abs((int)pots[k].a - (int)pots[k].b); }
-bool potWorn(uint8_t k)       { return pots[k].worn; }
 bool potBroken(uint8_t k)     { return pots[k].broken; }
 
 void clearPotFaults() {

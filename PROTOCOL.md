@@ -44,4 +44,4 @@ MIDI In ch + CC: what moves the knob (called drive in the firmware).
 
 State: 0 idle, 1 moving, 2 touch, 3 fault.
 Fault: 0 none, 1 wiper mismatch, 2 motor reversed, 3 motor stalled.
-Flags: bit 0 pot wear, bit 1 CC value valid, bit 2 motor running, bit 3 gang A only (wiper B repeats wiper A, no wear check).
+Flags: bit 0 unused, bit 1 CC value valid, bit 2 motor running, bit 3 gang A only (wiper B repeats wiper A).

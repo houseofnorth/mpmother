@@ -3,7 +3,7 @@
 //   IDLE    resting, waiting. Turning it by hand -> USER
 //   FOLLOW  motor drives it to a position Ableton asked for
 //   USER    a hand is on it: motor off, knob sends CC, MIDI in is ignored
-//   FAULT   motor locked off (worn pot, wrong direction, motor not moving). Still sends CC.
+//   FAULT   motor locked off (wiper mismatch, motor reversed, motor stalled). Still sends CC.
 #pragma once
 #include "pins.h"
 

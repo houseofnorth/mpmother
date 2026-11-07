@@ -43,7 +43,6 @@ press Demo again. Without a controller it shows a simulated one.
 |-----------------|---------|
 | dim green       | ready |
 | blue flicker    | MIDI in or out |
-| amber blink     | pot wear (the two wipers drift apart; off while `READ_GANG_B` is false) |
 | red blink       | fault, motors held off |
 | solid red       | driver kept faulting, needs *Clear faults* or a power cycle |
 | white blink ×3  | restarted by the watchdog |

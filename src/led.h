@@ -3,7 +3,6 @@
 //   white            starting up
 //   dim green        ready
 //   blue flicker     MIDI in or out
-//   amber blink      a pot is getting worn (still works)
 //   red blink        a knob or driver fault - motors held off
 //   solid red        driver kept faulting - needs "clear faults" or a power cycle
 //   white blink x3   rebooted by the watchdog (shown once after start-up)

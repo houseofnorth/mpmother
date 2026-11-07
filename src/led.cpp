@@ -36,15 +36,11 @@ void updateLed() {
   }
   if (sinceBoot < 300) { setColor(BRIGHT, BRIGHT, BRIGHT); return; }
 
-  bool anyFault = false, anyWorn = false;
-  for (uint8_t k = 0; k < NUM_KNOBS; k++) {
-    if (knobState(k) == FAULT) anyFault = true;
-    if (potWorn(k)) anyWorn = true;
-  }
+  bool anyFault = false;
+  for (uint8_t k = 0; k < NUM_KNOBS; k++) if (knobState(k) == FAULT) anyFault = true;
 
   if (driverFaultLatched())                     setColor(BRIGHT, 0, 0);
   else if (driverFault() || anyFault)           setColor(blink(500) ? BRIGHT : 0, 0, 0);
-  else if (anyWorn && blink(1500))              setColor(BRIGHT, BRIGHT / 3, 0);
   else if (midiInRecently(30) || midiOutRecently(30)) setColor(0, 0, BRIGHT);
   else                                          setColor(0, DIM, 0);
 }

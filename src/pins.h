@@ -22,13 +22,13 @@ const uint8_t PIN_DRIVER_SLEEP = 10;  // nSLEEP, both drivers. LOW = motors off,
 const uint8_t PIN_DRIVER_FAULT = 11;  // nFAULT, both drivers. LOW = over-current / over-heat
 
 // Each motorised pot has two gangs (A and B) on the same shaft.
-// With both read, they should agree - if they drift apart the pot is worn or dirty.
+// With both read, they should agree - if they drift far apart the knob faults (wiper mismatch).
 //                                        SPACE TEXTURE MOVEMENT SHADOW
 const uint8_t PIN_WIPER_A[NUM_KNOBS] = {  22,   16,     20,      14 };
 const uint8_t PIN_WIPER_B[NUM_KNOBS] = {  23,   17,     21,      15 };
 
 // The pots fitted now are salvaged from NeonFade: pin B3 (gang B, 3V3 end) is cut off,
-// so gang B is dead and only gang A is read. No wear check in this mode.
+// so gang B is dead and only gang A is read. No mismatch check in this mode.
 // Set to true when all four pots have both gangs intact again.
 const bool READ_GANG_B = false;
 

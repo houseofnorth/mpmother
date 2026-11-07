@@ -209,7 +209,7 @@ static void whileFault(uint8_t k, uint32_t now) {
   setMotor(k, 0);
   reportPosition(k);  // still usable as a plain knob
 
-  // Worn pots stay faulted. The other faults get one more try after a while:
+  // Wiper mismatch stays faulted. The other faults get one more try after a while:
   // one more bad move and the fault is back straight away.
   if (n.fault != FAULT_WIPERS && now - n.faultAt > FAULT_RETRY_MS) {
     n.state = IDLE;

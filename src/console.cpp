@@ -15,10 +15,10 @@ static void printStatus() {
     char drive[24];
     if (settings.driveChannel[k]) snprintf(drive, sizeof(drive), "ch %d cc %d", settings.driveChannel[k], settings.driveCC[k]);
     else                          snprintf(drive, sizeof(drive), "off");
-    Serial.printf("knob %d  out ch %d cc %d  in %s  pos %4d (A %4d B %4d)  cal %4d-%4d  rev %d  %-6s %s%s\n",
+    Serial.printf("knob %d  out ch %d cc %d  in %s  pos %4d (A %4d B %4d)  cal %4d-%4d  rev %d  %-6s %s\n",
                   k + 1, settings.outChannel[k], settings.outCC[k], drive, potPosition(k), wiperA(k), wiperB(k),
                   settings.calLow[k], settings.calHigh[k], settings.reverse[k], knobStateName(k),
-                  potWorn(k) ? "wear " : "", knobFaultName(k));
+                  knobFaultName(k));
   }
 }
 
