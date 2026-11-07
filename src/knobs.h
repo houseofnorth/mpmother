@@ -4,6 +4,9 @@
 //   FOLLOW  motor drives it to a position Ableton asked for
 //   USER    a hand is on it: motor off, knob sends CC, MIDI in is ignored
 //   FAULT   motor locked off (wiper mismatch, motor reversed, motor stalled). Still sends CC.
+//
+// With the motors off (settings.motorsOn = false) every knob is a plain controller:
+// it only sends, MIDI In is ignored, IDLE / USER only (FAULT for a wiper mismatch).
 #pragma once
 #include "pins.h"
 
@@ -19,7 +22,7 @@ enum KnobFault : uint8_t {
 void setupKnobs();
 void updateKnobs();                         // call every control tick (1 kHz)
 
-void moveKnobFromMidi(uint8_t k, uint8_t value, bool isEcho);  // 0-127
+void moveKnobFromMidi(uint8_t k, uint8_t value, bool isFeedback);  // 0-127. MIDI In, or mapping feedback
 void sendAllPositions();                    // force every knob to send its CC once
 void clearKnobFaults();
 const int ALL_KNOBS = -1;

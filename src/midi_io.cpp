@@ -4,7 +4,7 @@
 #include "pots.h"
 #include "motors.h"
 
-const uint8_t FIRMWARE_MAJOR = 1, FIRMWARE_MINOR = 1;
+const uint8_t FIRMWARE_MAJOR = 1, FIRMWARE_MINOR = 2;
 
 // ---- SysEx framing: F0 7D 4D 50 <command> <data...> F7 ----
 // 7D = "non-commercial" manufacturer ID, 4D 50 = "MP"
@@ -63,13 +63,14 @@ static void onControlChange(uint8_t channel, uint8_t control, uint8_t value) {
     // channel is 1-16 here, so a drive channel of 0 (off) never matches
     bool isFeedback = channel == settings.outChannel[k] && control == settings.outCC[k];
     bool isDrive    = channel == settings.driveChannel[k] && control == settings.driveCC[k];
-    if (isFeedback && settings.followFeedback) moveKnobFromMidi(k, value, true);  // may be our own echo
+    if (isFeedback && settings.followFeedback) moveKnobFromMidi(k, value, true);   // may be Live's echo
     else if (isDrive && !isFeedback)           moveKnobFromMidi(k, value, false);
   }
 }
 
 // ---------- SysEx: settings ----------
 // Editable part: per knob 4 bytes (out ch, out CC, drive ch, drive CC), then flags, then speed.
+// Flags: bit 0 follow feedback, bit 1 DIN out, bit 2 motors off (passive controller).
 const uint8_t EDITABLE_BYTES = 4 * NUM_KNOBS + 2;
 const uint8_t SETTINGS_BYTES = EDITABLE_BYTES + 5 * NUM_KNOBS;
 
@@ -80,7 +81,7 @@ void sendSettingsToTool() {
     m[0] = settings.outChannel[k];   m[1] = settings.outCC[k];
     m[2] = settings.driveChannel[k]; m[3] = settings.driveCC[k];
   }
-  d[4 * NUM_KNOBS]     = (settings.followFeedback ? 1 : 0) | (settings.dinOut ? 2 : 0);
+  d[4 * NUM_KNOBS]     = (settings.followFeedback ? 1 : 0) | (settings.dinOut ? 2 : 0) | (settings.motorsOn ? 0 : 4);
   d[4 * NUM_KNOBS + 1] = settings.maxSpeed;
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {  // calibration, read-only for the tool
     uint8_t *c = &d[EDITABLE_BYTES + 5 * k];
@@ -102,6 +103,7 @@ static void applySettingsFromTool(const uint8_t *d, uint8_t length) {
   }
   settings.followFeedback = d[4 * NUM_KNOBS] & 1;
   settings.dinOut         = d[4 * NUM_KNOBS] & 2;
+  settings.motorsOn       = !(d[4 * NUM_KNOBS] & 4);
   settings.maxSpeed       = d[4 * NUM_KNOBS + 1];
   saveSettings();  // calibration is only changed by calibrating
 }
@@ -148,7 +150,7 @@ static void onSysex(uint8_t *msg, unsigned length) {
     case CMD_CALIBRATE:     // data: knob 0-3, or nothing / 127 = all. Runs from loop(), not in here
       wantCalibration = (dataLength > 0 && data[0] < NUM_KNOBS) ? data[0] : ALL_KNOBS;
       break;
-    case CMD_FACTORY_RESET: factoryDefaults(); saveSettings(); sendSettingsToTool(); break;
+    case CMD_FACTORY_RESET: factoryDefaults(); saveSettings(); sendSettingsToTool(); break;  // keeps calibration
     case CMD_CLEAR_FAULTS:  clearKnobFaults(); clearDriverFault(); sendStatus(); break;
     case CMD_MONITOR:       monitorUntil = millis() + MONITOR_TIMEOUT_MS; break;
   }

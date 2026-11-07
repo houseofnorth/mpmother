@@ -347,6 +347,11 @@
   <div>
     <div class="set-head">General</div>
     <div class="set-row">
+      <span class="set-name">Motors</span>
+      <button type="button" class="switch" role="switch" aria-checked="false" aria-label="Motors" data-key="motorsOn"><i></i><span>—</span></button>
+      <span class="set-desc">Off: a plain controller. Knobs only send, MIDI In is ignored</span>
+    </div>
+    <div class="set-row">
       <span class="set-name">Feedback</span>
       <button type="button" class="switch" role="switch" aria-checked="false" aria-label="Feedback" data-key="followFeedback"><i></i><span>—</span></button>
       <span class="set-desc">Knobs follow values received on their MIDI Out CH + CC (Live: Remote on)</span>
@@ -481,7 +486,7 @@ const HOLD_AFTER_DRAG_MS = 300;    // keep the handle where it was let go, then 
 const fader = KNOB_NAMES.map(() => ({ dragging: false, hover: false, value: null, sent: null, holdUntil: 0 }));
 const plotGeom = KNOB_NAMES.map(() => null);   // plot area of the last draw: { top, height }
 
-const canMove = k => connected() && !!settings?.driveChannel[k];
+const canMove = k => connected() && !!settings?.motorsOn && !!settings?.driveChannel[k];
 const headValue = k => history[k].length ? history[k][history[k].length - 1].pos : null;
 
 function faderValueAt(k, clientY) {
@@ -513,6 +518,7 @@ const DEMO_TICK_MS = 100;
 let demoMotion = null;                // { timer, nextAt: [ms per knob] } while running
 
 function startDemoMotion() {
+  if (settings && !settings.motorsOn) { log("Demo needs the motors on (Settings · Motors)"); return; }
   const now = performance.now();
   const nextAt = KNOB_NAMES.map((_, k) => now + 300 + k * 500);   // staggered start
   const skipped = KNOB_NAMES.filter((_, k) => !canMove(k));
@@ -697,7 +703,8 @@ function setLamp(id, on) { $(id).className = "lamp" + (on ? " on" : ""); }
 
 function showStatus(d) {
   const awake = d[0] & 1, fault = d[0] & 2, latched = d[0] & 4;
-  $("drivers").innerHTML = latched ? `<span class="lamp bad"></span><span class="bad-text">Fault · latched</span>`
+  $("drivers").innerHTML = settings && !settings.motorsOn ? `<span class="lamp"></span>Off`
+                         : latched ? `<span class="lamp bad"></span><span class="bad-text">Fault · latched</span>`
                          : fault   ? `<span class="lamp bad"></span><span class="bad-text">Fault · retry</span>`
                          : `<span class="lamp${awake ? " on" : ""}"></span>${awake ? "Active" : "Standby"}`;
   setLamp("lampOut", d[1] & 2); $("txtOut").textContent = d[1] & 2 ? "Active" : "Idle";
@@ -736,7 +743,7 @@ const EDITABLE_BYTES = 18, SETTINGS_BYTES = 38, STATUS_BYTES = 42;
 function parseSettings(d) {
   const s = {
     outChannel: [], outCC: [], driveChannel: [], driveCC: [],
-    followFeedback: !!(d[16] & 1), dinOut: !!(d[16] & 2),
+    followFeedback: !!(d[16] & 1), dinOut: !!(d[16] & 2), motorsOn: !(d[16] & 4),
     maxSpeed: d[17], cal: [],
   };
   for (let k = 0; k < 4; k++) {
@@ -756,6 +763,7 @@ function parseSettings(d) {
 // ---------------------------------------------------------------------------
 const pad = (v, n) => String(v).padStart(n, "0");
 const PARAMS = {
+  motorsOn:       { bool: true },
   followFeedback: { bool: true },
   dinOut:         { bool: true },
   maxSpeed:       { min: 0, max: 127 },
@@ -766,8 +774,9 @@ KNOB_NAMES.forEach((_, k) => {
   PARAMS[`driveCh${k}`] = { min: 0, max: 16 };    // 0 = MIDI In off for this knob
   PARAMS[`driveCC${k}`] = { min: 0, max: 127 };
 });
+const MOTOR_KEYS = /^(followFeedback|maxSpeed|driveCh\d|driveCC\d)$/;   // only matter with the motors on
 let draft = null;
-const settingInputs = () => document.querySelectorAll("#fold-settings [data-key]");
+const settingInputs =() => document.querySelectorAll("#fold-settings [data-key]");
 
 function buildSettings() {
   const channels = withOff => `<option value="" hidden>—</option>` + (withOff ? `<option value="0">Off</option>` : "") +
@@ -808,7 +817,7 @@ function setParam(key, value, typingIn = null) {
 }
 
 function flatten(s) {
-  const f = { followFeedback: s.followFeedback, dinOut: s.dinOut, maxSpeed: s.maxSpeed };
+  const f = { motorsOn: s.motorsOn, followFeedback: s.followFeedback, dinOut: s.dinOut, maxSpeed: s.maxSpeed };
   KNOB_NAMES.forEach((_, k) => {
     f[`outCh${k}`] = s.outChannel[k];     f[`outCC${k}`] = s.outCC[k];
     f[`driveCh${k}`] = s.driveChannel[k]; f[`driveCC${k}`] = s.driveCC[k];
@@ -822,7 +831,8 @@ function renderParams(typingIn = null) {
   settingInputs().forEach(el => {
     const key = el.dataset.key, value = draft ? draft[key] : null;
     const inOff = key.startsWith("driveCC") && draft?.[`driveCh${key.slice(7)}`] === 0;   // CC unused while MIDI In is off
-    el.disabled = !draft || inOff;
+    const motorOnly = MOTOR_KEYS.test(key) && draft?.motorsOn === false;                 // unused while the motors are off
+    el.disabled = !draft || inOff || motorOnly;
     el.classList.toggle("changed", isChanged(key) && !inOff);
     if (el.classList.contains("switch")) {
       el.setAttribute("aria-checked", String(!!value));
@@ -841,11 +851,13 @@ function renderParams(typingIn = null) {
 }
 
 function showSettings(s) {
+  if (!s.motorsOn) stopDemoMotion();   // nothing left to move
   draft = flatten(s);
   renderParams();
   KNOB_NAMES.forEach((_, k) => {
     $(`ccLabel${k}`).textContent = `Out CH ${s.outChannel[k]} · CC ${s.outCC[k]}`;
-    $(`moveLabel${k}`).textContent = s.driveChannel[k] ? `In CH ${s.driveChannel[k]} · CC ${s.driveCC[k]}` : "In off";
+    $(`moveLabel${k}`).textContent = !s.motorsOn ? "Motors off"
+                                   : s.driveChannel[k] ? `In CH ${s.driveChannel[k]} · CC ${s.driveCC[k]}` : "In off";
   });
   updateFaders();
   renderMaintenance();
@@ -855,7 +867,7 @@ function settingsFromDraft() {
   const d = draft;
   return [
     ...KNOB_NAMES.flatMap((_, k) => [d[`outCh${k}`], d[`outCC${k}`], d[`driveCh${k}`], d[`driveCC${k}`]]),
-    (d.followFeedback ? 1 : 0) | (d.dinOut ? 2 : 0),
+    (d.followFeedback ? 1 : 0) | (d.dinOut ? 2 : 0) | (d.motorsOn ? 0 : 4),
     d.maxSpeed,
   ];
 }
@@ -888,9 +900,11 @@ function buildMaintenance() {
 }
 
 function renderMaintenance() {
+  const canCalibrate = connected() && settings?.motorsOn !== false;   // calibrating needs the motors
+  $("calibrateBtn").disabled = !canCalibrate;
   KNOB_NAMES.forEach((_, k) => {
     const cal = settings?.cal[k], h = health[k], live = h.a !== null;
-    $(`mCal${k}`).disabled = !connected();
+    $(`mCal${k}`).disabled = !canCalibrate;
 
     $(`mA${k}`).textContent = live ? h.a : "—";
     $(`mB${k}`).textContent = live ? h.b : "—";
@@ -963,7 +977,7 @@ function fillPicker() {
 
 function setConnected(name) {
   const on = !!name;
-  ["clearBtn", "calibrateBtn", "resetBtn"].forEach(id => $(id).disabled = !on);
+  ["clearBtn", "resetBtn"].forEach(id => $(id).disabled = !on);   // Calibrate: renderMaintenance
   if (!on) { draft = null; settings = null; renderParams(); health.forEach(h => Object.assign(h, noHealth())); }
   renderMaintenance();
   updateFaders();
@@ -1083,7 +1097,7 @@ async function start() {
   $("revertBtn").onclick = () => { if (settings) showSettings(settings); log("Changes reverted"); };
   $("clearBtn").onclick = () => { send(CMD.clearFaults); log("Faults cleared"); };
   armed($("calibrateBtn"), "Calibrate all", () => { send(CMD.calibrate, [127]); log("Calibrating all knobs. Hands off for about 40 seconds"); });
-  armed($("resetBtn"), "Factory reset", () => { send(CMD.factoryReset); log("Factory reset"); });
+  armed($("resetBtn"), "Factory reset", () => { send(CMD.factoryReset); log("Factory reset. Calibration is kept"); });
 
   if (!navigator.requestMIDIAccess) { $("noMidi").classList.remove("hidden"); return; }
   // First visit: say that Chrome is about to ask, so the prompt is not a surprise.
@@ -1116,7 +1130,8 @@ class DemoController {
     this.reply = reply;
     this.settings = [];
     for (let k = 0; k < 4; k++) this.settings.push(1, 20 + k, 2, 20 + k);  // ch 1 cc 20.., moved by ch 2 cc 20..
-    this.settings.push(3, 127);                                             // feedback + DIN, speed
+    this.settings.push(3, 127);                                             // feedback + DIN, motors on, speed
+    this.defaults = this.settings.slice();                                  // for factory reset
     for (let k = 0; k < 4; k++) this.settings.push(0, 20, 7, 100, 0);       // calibration
     this.knobs = [0, 1, 2, 3].map(k => ({ pos: 200 + k * 180, target: null, mode: 0, cc: 0, until: 0 }));
     this.monitorUntil = 0;
@@ -1124,10 +1139,11 @@ class DemoController {
   }
   stop() { clearInterval(this.timer); }
   sysex(cmd, data) { this.reply(new Uint8Array([...HEADER, cmd, ...data, 0xF7])); }
+  get motorsOn() { return !(this.settings[16] & 4); }
   receive(m) {
     if ((m[0] & 0xF0) === 0xB0) {                 // CC: moves every knob whose drive ch + CC match
       const ch = (m[0] & 0x0F) + 1;
-      this.knobs.forEach((n, k) => {
+      if (this.motorsOn) this.knobs.forEach((n, k) => {
         const [, , driveCh, driveCC] = this.settings.slice(4 * k, 4 * k + 4);
         if (driveCh === ch && driveCC === m[1] && n.mode !== 2) Object.assign(n, { target: 20 + m[2] * 7.2, mode: 1 });
       });
@@ -1135,7 +1151,8 @@ class DemoController {
       return;
     }
     const cmd = m[4], data = m.slice(5, -1);
-    if (cmd === CMD.hello) this.sysex(REPLY.hello, [1, 1, 4]);
+    if (cmd === CMD.hello) this.sysex(REPLY.hello, [1, 2, 4]);
+    if (cmd === CMD.factoryReset) this.settings.splice(0, EDITABLE_BYTES, ...this.defaults);
     if (cmd === CMD.getSettings || cmd === CMD.factoryReset) this.sysex(REPLY.settings, this.settings);
     if (cmd === CMD.setSettings) { this.settings.splice(0, EDITABLE_BYTES, ...data); this.sysex(REPLY.settings, this.settings); }
     if (cmd === CMD.monitor) this.monitorUntil = performance.now() + 5000;
@@ -1144,6 +1161,7 @@ class DemoController {
   tick() {
     const t = performance.now();
     this.knobs.forEach((n, k) => {
+      if (n.mode === 1 && !this.motorsOn) Object.assign(n, { mode: 0, target: null });   // motors switched off
       if (n.mode === 1 && n.target !== null) {         // motor heading to target
         n.pos += Math.sign(n.target - n.pos) * Math.min(Math.abs(n.target - n.pos), 38);
         if (Math.abs(n.target - n.pos) < 3) { n.target = null; n.mode = 0; }
@@ -1152,13 +1170,13 @@ class DemoController {
         if (t > n.until) n.mode = 0;
       } else if (n.mode === 0 && Math.random() < 0.012) {
         if (Math.random() < 0.5) Object.assign(n, { mode: 2, until: t + 1500 + Math.random() * 2000 });
-        else Object.assign(n, { mode: 1, target: 20 + Math.random() * 900 });
+        else if (this.motorsOn) Object.assign(n, { mode: 1, target: 20 + Math.random() * 900 });
       }
       n.pos = Math.min(920, Math.max(20, n.pos));
       n.cc = Math.round((n.pos - 20) * 127 / 900);
     });
     if (t > this.monitorUntil) return;
-    const status = [1, (this.lastIn && t - this.lastIn < 60 ? 1 : 0) | 2];
+    const status = [this.motorsOn ? 1 : 0, (this.lastIn && t - this.lastIn < 60 ? 1 : 0) | 2];
     this.knobs.forEach(n => {
       const a = Math.round(n.pos), b = a;
       const target = n.target === null ? NO_TARGET : Math.round(n.target);

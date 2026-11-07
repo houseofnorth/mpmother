@@ -14,6 +14,7 @@ struct Settings {
   bool     dinOut;                   // also send on the DIN MIDI socket
 
   // Motion
+  bool     motorsOn;            // false = passive controller: motors never run, MIDI In is ignored
   uint8_t  maxSpeed;            // 0-127  top motor speed when following Ableton
 
   // Calibration (filled in by "calibrate")
@@ -26,4 +27,4 @@ extern Settings settings;
 
 void loadSettings();     // read from EEPROM, or factory defaults if nothing valid is stored
 void saveSettings();
-void factoryDefaults();  // does not save - call saveSettings() afterwards
+void factoryDefaults();  // keeps the calibration. Does not save - call saveSettings() afterwards

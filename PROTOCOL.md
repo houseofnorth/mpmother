@@ -13,26 +13,28 @@ Every message: `F0 7D 4D 50 <command> <data…> F7`
 | `01` | hello          | –               | `41` hello              |
 | `02` | get settings   | –               | `42` settings           |
 | `03` | set settings   | settings bytes 0–17 | `42` settings (saved to EEPROM) |
-| `04` | calibrate      | knob 0–3, or 127 / nothing = all | `42` settings when done (~10 s per knob, knobs move) |
-| `05` | factory reset  | –               | `42` settings           |
+| `04` | calibrate      | knob 0–3, or 127 / nothing = all | `42` settings when done (~10 s per knob, knobs move). Ignored while the motors are off. |
+| `05` | factory reset  | –               | `42` settings (calibration is kept) |
 | `06` | clear faults   | –               | `43` status             |
 | `07` | monitor        | –               | `43` status every 50 ms for the next 5 s. Resend every 2 s to keep it going. |
 
 ## Controller → tool
 
-**`41` hello**: firmware major, firmware minor, number of knobs. Current firmware: 1.1.
+**`41` hello**: firmware major, firmware minor, number of knobs. Current firmware: 1.2.
 
 **`42` settings** (38 bytes)
 
 | Byte  | Meaning |
 |-------|---------|
 | 0–15  | per knob, 4 bytes: MIDI Out ch 1–16, Out CC, MIDI In ch 0–16 (0 = off), In CC |
-| 16    | bit 0 follow mapping feedback, bit 1 DIN out |
+| 16    | bit 0 follow mapping feedback, bit 1 DIN out, bit 2 motors off (passive controller: knobs only send, MIDI In is ignored) |
 | 17    | motor speed 0–127 |
 | 18–37 | per knob, 5 bytes: cal low (14-bit), cal high (14-bit), reverse. Read-only. |
 
 MIDI Out ch + CC: what the knob sends (and the mapping feedback it follows).
-MIDI In ch + CC: what moves the knob (called drive in the firmware).
+MIDI In ch + CC: what moves the knob (called drive in the firmware). A knob moved by MIDI In sends its
+position on its MIDI Out ch + CC on the way, and ends on exactly the value it was given.
+A knob moved by mapping feedback sends nothing.
 
 **`43` status** (42 bytes)
 

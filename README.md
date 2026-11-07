@@ -20,8 +20,11 @@ for both, set in the config tool.
 - **Knobs follow the set:** in Live's MIDI preferences, turn on *Remote* for the MPMOTHER
   **output**. Live then sends mapping feedback and the knobs jump to the right place.
 - **Let Ableton drive the knobs:** send ch 2, CC 20–23 to MPMOTHER from a MIDI track
-  (clips, automation, Max for Live LFOs). The knobs move and send their position.
+  (clips, automation, Max for Live LFOs). The knobs move and send their position, so whatever
+  is mapped to them follows.
 - A hand on a knob always wins.
+- **Without motors:** Settings → *Motors* Off makes MPMOTHER a plain controller: the knobs only
+  send, MIDI In is ignored.
 
 ## Config tool
 

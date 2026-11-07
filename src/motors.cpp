@@ -53,7 +53,7 @@ void setupMotors() {
 
 void setMotor(uint8_t k, int speed) {
   speed = constrain(speed, -255, 255);
-  if (faultActive || faultLatched) speed = 0;
+  if (faultActive || faultLatched || !settings.motorsOn) speed = 0;  // motors off = drivers stay asleep
   speeds[k] = speed;
   if (speed != 0) { wakeDrivers(); lastRunning = millis(); }
   writePins(k, speed);
