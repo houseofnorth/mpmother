@@ -15,6 +15,11 @@ const uint32_t SPINUP_MS        = 300;   // grace time before stall detection (s
 const uint32_t STALL_WINDOW_MS  = 600;   // the knob must gain STALL_PROGRESS towards the target within
 const int      STALL_PROGRESS   = 4;     // this long, in ADC counts - otherwise it is held (or the motor is dead)
 const uint32_t MOVE_TIMEOUT_MS  = 6000;  // hard stop for any single move
+const uint32_t KICK_MS          = 60;    // a motor starting from standstill (or turning round) gets
+const int      KICK_DRIVE       = 255;   // this PWM for up to KICK_MS, until the knob has moved
+const int      KICK_MOVED       = 2;     // this many ADC counts: breaks the gearbox free on small, slow moves
+const int      NEAR_STEPS       = 2;     // stuck within this many CC steps of the target = arrived, not a stall
+                                         // (slow automation sends one-step moves the motor may not finish)
 const uint32_t SETTLE_MS        = 80;    // let the pot settle after the motor stops
 const uint32_t USER_RELEASE_MS  = 1500;  // no movement this long = the hand let go
 const uint32_t ECHO_MS          = 300;   // ignore Ableton echoing our own CC back
@@ -39,6 +44,8 @@ struct Knob {
   int       topSpeed = 255;
   uint32_t  moveStart = 0, lastProgress = 0;
   int       progressRef = 0;
+  uint32_t  kickUntil = 0;                 // full power until then (see KICK_MS)
+  int       kickRef = 0;                   // position when the kick started
   bool      resting = false;            // restPos is valid
   int       restPos = 0;
   uint32_t  stoppedAt = 0;
@@ -57,6 +64,7 @@ static Knob knobs[NUM_KNOBS];
 static int potRange(uint8_t k)          { return max(1, settings.calHigh[k] - settings.calLow[k]); }
 static int ccToPosition(uint8_t k, int v) { return settings.calLow[k] + (long)v * potRange(k) / 127; }
 static int speedToDuty(uint8_t speed)   { return MIN_DRIVE + (255 - MIN_DRIVE) * speed / 127; }
+static int nearTarget(uint8_t k)        { return NEAR_STEPS * potRange(k) / 127; }  // in ADC counts
 
 // Send CC only when the knob has clearly moved into a new step (0.75 step hysteresis).
 static void reportPosition(uint8_t k) {
@@ -82,12 +90,20 @@ static void stopMotor(uint8_t k) {
 
 static void startMove(uint8_t k, int target, int topSpeed, KnobState why) {
   Knob &n = knobs[k];
+  uint32_t now = millis();
+  int pos = potPosition(k);
   n.target = constrain(target, settings.calLow[k], settings.calHigh[k]);
   n.topSpeed = topSpeed;
   n.state = why;
-  n.moveStart = n.lastProgress = millis();
-  n.progressRef = potPosition(k);
+  n.moveStart = n.lastProgress = now;
+  n.progressRef = pos;
   n.resting = false;
+
+  // Standing still, or about to turn round: kick it. A move that just continues keeps
+  // whatever kick is still running.
+  int running = motorSpeed(k);
+  bool turningRound = running != 0 && (running > 0) != (n.target > pos);
+  if (running == 0 || turningRound) { n.kickUntil = now + KICK_MS; n.kickRef = pos; }
 }
 
 static void enterFault(uint8_t k, KnobFault why) {
@@ -146,6 +162,10 @@ static void whileDriving(uint8_t k, uint32_t now) {
   }
 
   int duty = constrain((int)(abs(distance) * KP), MIN_DRIVE, n.topSpeed);
+  if ((int32_t)(n.kickUntil - now) > 0) {             // kick: full power until the knob moves
+    if (abs(pos - n.kickRef) >= KICK_MOVED) n.kickUntil = now;
+    else duty = KICK_DRIVE;
+  }
   int speed = distance > 0 ? duty : -duty;
   setMotor(k, speed);
 
@@ -159,7 +179,12 @@ static void whileDriving(uint8_t k, uint32_t now) {
       return;
     }
     if (moved >= STALL_PROGRESS) { n.progressRef = pos; n.lastProgress = now; }
-    else if (now - n.lastProgress > STALL_WINDOW_MS) { enterUser(k, true); return; }  // held still, or dead motor
+    else if (now - n.lastProgress > STALL_WINDOW_MS) {
+      // Stuck a step or two short of the target: close enough. Not a hand, not a dead motor.
+      if (abs(distance) <= nearTarget(k)) { stopMotor(k); moveFinished(k); n.state = IDLE; return; }
+      enterUser(k, true);                             // held still, or dead motor
+      return;
+    }
   }
 
   if (now - n.moveStart > MOVE_TIMEOUT_MS) {         // safety stop
