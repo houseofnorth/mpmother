@@ -882,7 +882,7 @@ function buildMaintenance() {
       <div><button class="quiet" id="mCal${k}" disabled>Calibrate</button></div>`).join("");
   KNOB_NAMES.forEach((name, k) => armed($(`mCal${k}`), "Calibrate", () => {
     send(CMD.calibrate, [k]);
-    log(`Calibrating ${name}. Hands off for 4 seconds`);
+    log(`Calibrating ${name}. Hands off for about 10 seconds`);
   }));
 }
 
@@ -1076,7 +1076,7 @@ async function start() {
   $("saveBtn").onclick = () => { send(CMD.setSettings, settingsFromDraft()); log("Settings written to device"); };
   $("revertBtn").onclick = () => { if (settings) showSettings(settings); log("Changes reverted"); };
   $("clearBtn").onclick = () => { send(CMD.clearFaults); log("Faults cleared"); };
-  armed($("calibrateBtn"), "Calibrate all", () => { send(CMD.calibrate, [127]); log("Calibrating all knobs. Hands off for 15 seconds"); });
+  armed($("calibrateBtn"), "Calibrate all", () => { send(CMD.calibrate, [127]); log("Calibrating all knobs. Hands off for about 40 seconds"); });
   armed($("resetBtn"), "Factory reset", () => { send(CMD.factoryReset); log("Factory reset"); });
 
   if (!navigator.requestMIDIAccess) { $("noMidi").classList.remove("hidden"); return; }

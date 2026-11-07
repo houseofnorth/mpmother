@@ -23,7 +23,7 @@ void moveKnobFromMidi(uint8_t k, uint8_t value, bool isEcho);  // 0-127
 void sendAllPositions();                    // force every knob to send its CC once
 void clearKnobFaults();
 const int ALL_KNOBS = -1;
-void calibrateKnobs(void (*keepAlive)(), int which = ALL_KNOBS);  // blocking ~4 s per knob, knobs move!
+void calibrateKnobs(void (*keepAlive)(), int which = ALL_KNOBS);  // blocking ~10 s per knob, knobs move!
 
 KnobState   knobState(uint8_t k);
 KnobFault   knobFault(uint8_t k);

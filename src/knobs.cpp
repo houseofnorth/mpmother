@@ -5,19 +5,32 @@
 #include "midi_io.h"
 
 // ---- tuning (check these on the bench) ----
-const int      MIN_DUTY         = 70;    // below this the gearbox does not turn
-const float    KP               = 1.2f;  // motor duty per ADC count of distance to target
+// Defaults are for slow, weak motors on 5 V: about 2-3 s for full travel at full speed.
+const int      MIN_DRIVE        = 150;   // lowest PWM (0-255) a moving motor ever gets; less stalls at 5 V
+const float    KP               = 1.2f;  // motor duty per ADC count of distance to target (slows down
+                                         // near it, but never below MIN_DRIVE)
 const int      DEADBAND         = 6;     // close enough, in ADC counts (0-1023)
 const int      TOUCH_MOVE       = 14;    // unexpected movement that counts as a hand
-const uint32_t SPINUP_MS        = 150;   // grace time before stall detection
-const uint32_t STALL_MS         = 300;   // no progress this long while driving = held
-const uint32_t MOVE_TIMEOUT_MS  = 2500;  // hard stop for any single move
+const uint32_t SPINUP_MS        = 300;   // grace time before stall detection (slow motors start slowly)
+const uint32_t STALL_WINDOW_MS  = 600;   // the knob must gain STALL_PROGRESS towards the target within
+const int      STALL_PROGRESS   = 4;     // this long, in ADC counts - otherwise it is held (or the motor is dead)
+const uint32_t MOVE_TIMEOUT_MS  = 6000;  // hard stop for any single move
 const uint32_t SETTLE_MS        = 80;    // let the pot settle after the motor stops
 const uint32_t USER_RELEASE_MS  = 1500;  // no movement this long = the hand let go
 const uint32_t ECHO_MS          = 300;   // ignore Ableton echoing our own CC back
 const uint8_t  STRIKES_TO_FAULT = 3;     // this many bad moves in a row = FAULT
 const uint32_t FAULT_RETRY_MS   = 60000; // direction / not-moving faults try again after this
                                          // (a person fighting the knob can look like a fault)
+
+// ---- calibration: drive each way at full speed until the knob stops at its end stop ----
+const int      CAL_SPEED        = 255;   // full speed
+const int      CAL_STILL_COUNTS = 3;     // moving less than this (ADC counts) ...
+const uint32_t CAL_STILL_MS     = 400;   // ... for this long = at the end stop
+const uint32_t CAL_TIMEOUT_MS   = 6000;  // safety stop for each direction
+const uint32_t CAL_SETTLE_MS    = 150;   // let the pot settle before reading an end
+const int      CAL_MIN_TRAVEL   = 10;    // moved less than this = it was already at that end
+const int      CAL_MIN_RANGE    = 200;   // a smaller range means something is wrong: keep the old values
+const int      CAL_END_MARGIN   = 8;     // stay this far inside the end stops
 
 struct Knob {
   KnobState state = IDLE;
@@ -43,7 +56,7 @@ static Knob knobs[NUM_KNOBS];
 // ---------- helpers ----------
 static int potRange(uint8_t k)          { return max(1, settings.calHigh[k] - settings.calLow[k]); }
 static int ccToPosition(uint8_t k, int v) { return settings.calLow[k] + (long)v * potRange(k) / 127; }
-static int speedToDuty(uint8_t speed)   { return MIN_DUTY + (255 - MIN_DUTY) * speed / 127; }
+static int speedToDuty(uint8_t speed)   { return MIN_DRIVE + (255 - MIN_DRIVE) * speed / 127; }
 
 // Send CC only when the knob has clearly moved into a new step (0.75 step hysteresis).
 static void reportPosition(uint8_t k) {
@@ -132,7 +145,7 @@ static void whileDriving(uint8_t k, uint32_t now) {
     return;
   }
 
-  int duty = constrain((int)(abs(distance) * KP), MIN_DUTY, n.topSpeed);
+  int duty = constrain((int)(abs(distance) * KP), MIN_DRIVE, n.topSpeed);
   int speed = distance > 0 ? duty : -duty;
   setMotor(k, speed);
 
@@ -145,8 +158,8 @@ static void whileDriving(uint8_t k, uint32_t now) {
       enterUser(k, false);
       return;
     }
-    if (moved >= 3) { n.progressRef = pos; n.lastProgress = now; }
-    else if (now - n.lastProgress > STALL_MS) { enterUser(k, true); return; }  // held still
+    if (moved >= STALL_PROGRESS) { n.progressRef = pos; n.lastProgress = now; }
+    else if (now - n.lastProgress > STALL_WINDOW_MS) { enterUser(k, true); return; }  // held still, or dead motor
   }
 
   if (now - n.moveStart > MOVE_TIMEOUT_MS) {         // safety stop
@@ -233,48 +246,73 @@ void clearKnobFaults() {
   }
 }
 
-// Drive a motor for a fixed time while keeping the watchdog fed.
-static void runFor(uint8_t k, int speed, uint32_t ms, void (*keepAlive)()) {
-  uint32_t start = millis();
-  while (millis() - start < ms) {
-    setMotor(k, speed);
-    updateMotors();
-    keepAlive();
-    if (driverFault()) break;
-    delay(1);
-  }
-  setMotor(k, 0);
-}
-
 static void waitFor(uint32_t ms, void (*keepAlive)()) {
   uint32_t start = millis();
   while (millis() - start < ms) { keepAlive(); delay(1); }
 }
 
+// Where one drive towards an end stop ended up.
+struct EndStop {
+  int      reading;    // settled pot reading at the end
+  uint32_t ms;         // how long the knob kept moving
+  bool     timedOut;   // still moving after CAL_TIMEOUT_MS
+};
+
+// Drive one way until the knob stops moving (it has reached the end stop), the safety
+// timeout hits, or the driver faults. Keeps the watchdog fed, then reads the settled end.
+static EndStop findEnd(uint8_t k, int speed, void (*keepAlive)()) {
+  EndStop end = { 0, 0, true };
+  uint32_t start = millis(), lastMove = start;
+  int ref = readPotSlow(k);
+  while (millis() - start < CAL_TIMEOUT_MS) {
+    setMotor(k, speed);
+    updateMotors();
+    keepAlive();
+    if (driverFault()) { end.timedOut = false; break; }
+    int pos = readPotSlow(k);
+    if (abs(pos - ref) > CAL_STILL_COUNTS) { ref = pos; lastMove = millis(); }
+    else if (millis() - lastMove > CAL_STILL_MS) { end.timedOut = false; break; }  // stopped: end stop
+    delay(2);
+  }
+  setMotor(k, 0);
+  end.ms = (end.timedOut ? millis() : lastMove) - start;
+  waitFor(CAL_SETTLE_MS, keepAlive);
+  end.reading = readPotSlow(k);
+  return end;
+}
+
 void calibrateKnobs(void (*keepAlive)(), int which) {
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {
     if (which != ALL_KNOBS && which != k) continue;
-    // 1. Which way does the motor turn the pot?
+
+    // 1. Which way does the motor turn the pot? Drive "up" until it stops.
+    //    If it was already at that end, drive the other way instead.
     settings.reverse[k] = false;
-    int p0 = readPotSlow(k);
-    runFor(k, 200, 400, keepAlive);  waitFor(100, keepAlive);
-    int p1 = readPotSlow(k);
-    if (abs(p1 - p0) < 10) {  // probably sitting at an end stop - try the other way
-      runFor(k, -200, 400, keepAlive);  waitFor(100, keepAlive);
-      int p2 = readPotSlow(k);
-      settings.reverse[k] = p2 > p1;
+    int start = readPotSlow(k);
+    EndStop first = findEnd(k, CAL_SPEED, keepAlive);
+    bool atHigh;                                       // which end the knob is at now
+    if (abs(first.reading - start) >= CAL_MIN_TRAVEL) {
+      settings.reverse[k] = first.reading < start;    // driving "up" lowered the reading
+      atHigh = first.reading > start;
     } else {
-      settings.reverse[k] = p1 < p0;
+      EndStop second = findEnd(k, -CAL_SPEED, keepAlive);
+      settings.reverse[k] = second.reading > first.reading;   // driving "down" raised the reading
+      atHigh = second.reading > first.reading;
     }
-    // 2. Find both end stops.
-    runFor(k, -220, 1500, keepAlive);  waitFor(150, keepAlive);
-    int low = readPotSlow(k);
-    runFor(k, 220, 1500, keepAlive);   waitFor(150, keepAlive);
-    int high = readPotSlow(k);
-    bool ok = high - low > 200;
-    if (ok) { settings.calLow[k] = low + 8; settings.calHigh[k] = high - 8; }
-    Serial.printf("calibrate knob %d: low %d  high %d  reverse %d  %s\n", k + 1, low, high,
-                  settings.reverse[k], ok ? "ok" : "range too small, kept old values - check wiring");
+
+    // 2. Find both end stops, timing a full travel to each: first to the end it is not at.
+    EndStop low, high;
+    if (atHigh) { low = findEnd(k, -CAL_SPEED, keepAlive); high = findEnd(k, CAL_SPEED, keepAlive); }
+    else        { high = findEnd(k, CAL_SPEED, keepAlive); low = findEnd(k, -CAL_SPEED, keepAlive); }
+
+    bool ok = high.reading - low.reading > CAL_MIN_RANGE;
+    if (ok) { settings.calLow[k] = low.reading + CAL_END_MARGIN; settings.calHigh[k] = high.reading - CAL_END_MARGIN; }
+    Serial.printf("calibrate knob %d: low %d in %lu ms%s  high %d in %lu ms%s  reverse %d  %s\n", k + 1,
+                  low.reading, (unsigned long)low.ms, low.timedOut ? " (timeout)" : "",
+                  high.reading, (unsigned long)high.ms, high.timedOut ? " (timeout)" : "",
+                  settings.reverse[k],
+                  ok ? "ok" : driverFault() ? "driver fault, kept old values - check motor and supply"
+                            : "range too small, kept old values - check wiring");
     stopMotor(k);
     knobs[k].state = IDLE;
   }
