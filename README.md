@@ -49,6 +49,15 @@ press Demo again. Without a controller it shows a simulated one.
 | solid red       | driver kept faulting, needs *Clear faults* or a power cycle |
 | white blink ×3  | restarted by the watchdog |
 
+## Hardware
+
+A main board (MPMOTHER v1) and one pot board (MPCHILD v1) per knob. Schematic, board file,
+Gerbers and pictures: [hardware/](hardware/).
+
+![MPMOTHER v1 main board](media/mpmother%20v1.png)
+
+![MPCHILD v1 pot board](media/mpchild%20v1.png)
+
 ## Firmware
 
 PlatformIO project. Open this folder in VS Code with the PlatformIO extension, then
