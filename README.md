@@ -1,7 +1,6 @@
 # MPMOTHER
 
-Four motorised pots as a MIDI controller. Teensy 4.1, two Pololu DRV8833 drivers,
-ALPS RK16812MG099 dual-gang motorised pots. House of North.
+House of North 2026
 
 ![The MPMOTHER config tool: the four knobs live, laid out like the front panel](media/config-tool.png)
 
