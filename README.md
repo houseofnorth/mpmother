@@ -3,6 +3,8 @@
 Four motorised pots as a MIDI controller. Teensy 4.1, two Pololu DRV8833 drivers,
 ALPS RK16812MG099 dual-gang motorised pots. House of North.
 
+![The MPMOTHER config tool: the four knobs live, laid out like the front panel](media/config-tool.png)
+
 | Knob | Name     | MIDI Out (default) | MIDI In (default) |
 |------|----------|--------------------|-------------------|
 | 1    | SPACE    | ch 1, CC 20        | ch 2, CC 20       |
@@ -27,7 +29,7 @@ for both, set in the config tool.
 Open <https://houseofnorth.github.io/mpmother/> in Chrome or Edge with the controller plugged in.
 The first time, Chrome asks for permission to use MIDI devices: click **Allow**, the page needs it.
 The main page shows the four knobs live (position, where the motor is heading, hand on knob).
-**Settings** (top right) has all settings, calibration, pot health and faults.
+**Settings** (top right) has all settings, calibration, wiper readings and faults.
 It works while Ableton is running.
 
 **As an app, offline:** click **Install** (top right; or the install icon in Chrome's address bar).
