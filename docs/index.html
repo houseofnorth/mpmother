@@ -22,7 +22,7 @@
     --lamp: #ff8a1e;      /* pilot-lamp orange, for "on" */
     --screw: #34312b;     /* panel screw heads */
     --red: #ff3d1f;       /* faults */
-    --amber: #e0a400;     /* wear warnings */
+    --amber: #e0a400;     /* changed, not yet written */
     --din: "DIN Condensed", "DIN Alternate", "Barlow Condensed", "Arial Narrow", sans-serif;
     --gutter: 28px;       /* page side margin, 16 px on narrow screens */
     --quarter-min: 260px; /* smallest height of one knob quarter before the page scrolls */
@@ -82,6 +82,7 @@
            padding: 4px 0 2px; border-radius: 0; appearance: none; min-width: 260px; }
 
   .notice { padding: 16px 0; border-bottom: 1px solid var(--red); color: var(--red); }
+  .notice.info { color: var(--ink); border-bottom-color: var(--faint); }   /* not a problem, just what happens next */
 
   /* ---------- system strip ----------
      Part of the title bar: a closed row between the top rule and the knob panel's rule,
@@ -142,7 +143,6 @@
            touch-action: none; outline: none; }
   .fader.off { cursor: default; }
   .fader:focus-visible { box-shadow: inset 1px 0 0 var(--dim); }
-  .warn { color: var(--amber); }
   .msg { min-height: 18px; }
 
   /* ---------- settings: a plain list and a mapping table ----------
@@ -312,6 +312,8 @@
 </section>
 
 <div class="notice hidden" id="noMidi">This browser cannot reach MIDI devices. Open the page in Chrome or Edge.</div>
+<!-- Shown while Chrome is about to ask for MIDI permission (first visit) -->
+<div class="notice info hidden" id="midiAsk"><span class="lamp on"></span>Chrome will ask for permission to use MIDI devices. Click Allow: without it the page cannot reach MPMOTHER.</div>
 
 <!-- Only shown when no port called MPMOTHER is found -->
 <section class="picker hidden" id="picker">
@@ -705,7 +707,7 @@ function showStatus(d) {
   $("maint").classList.toggle("single", !!(d[2 + 2] & 8));  // gang A only: hide Wiper B + Mismatch
   for (let k = 0; k < 4; k++) {
     const c = d.slice(2 + 10 * k, 12 + 10 * k);
-    const mode = c[0], fault = c[1], worn = c[2] & 1, hasCC = c[2] & 2;
+    const mode = c[0], fault = c[1], hasCC = c[2] & 2;
     const a = join14(c[4], c[5]), b = join14(c[6], c[7]), target = join14(c[8], c[9]);
     const diff = Math.abs(a - b);
 
@@ -716,12 +718,11 @@ function showStatus(d) {
     modeEl.textContent = MODE_TEXT[mode] || "?";
     modeEl.className = "mode " + (MODE_CLASS[mode] || "");
 
-    Object.assign(health[k], { worn: !!worn, fault, diff, a, b });   // shown in Maintenance
+    Object.assign(health[k], { fault, diff, a, b });   // shown in Maintenance
 
     const msg = $(`msg${k}`);
-    if (fault)     { msg.textContent = FAULT_TEXT[fault]; msg.className = "msg bad-text"; }
-    else if (worn) { msg.textContent = "Pot wear"; msg.className = "msg warn"; }
-    else           { msg.textContent = ""; msg.className = "msg"; }
+    msg.textContent = fault ? FAULT_TEXT[fault] : "";
+    msg.className = "msg" + (fault ? " bad-text" : "");
   }
   renderMaintenance();
 }
@@ -863,7 +864,7 @@ function settingsFromDraft() {
 // Maintenance: calibration and health per knob
 // ---------------------------------------------------------------------------
 // Live per knob from the status stream. a / b = the two pot halves (gangs), raw ADC 0-1023.
-const noHealth = () => ({ worn: false, fault: 0, diff: 0, a: null, b: null });
+const noHealth = () => ({ fault: 0, diff: 0, a: null, b: null });
 const health = KNOB_NAMES.map(noHealth);
 
 function buildMaintenance() {
@@ -893,8 +894,7 @@ function renderMaintenance() {
 
     $(`mA${k}`).textContent = live ? h.a : "—";
     $(`mB${k}`).textContent = live ? h.b : "—";
-    $(`mDiff${k}`).textContent = !live ? "—" : h.worn ? `${h.diff} · Wear` : h.diff;
-    $(`mDiff${k}`).className = "val num gangB" + (h.worn ? " warn" : "");
+    $(`mDiff${k}`).textContent = live ? h.diff : "—";
     $(`mStatus${k}`).textContent = !live ? "—" : h.fault ? FAULT_TEXT[h.fault] : "OK";
     $(`mStatus${k}`).className = "val " + (h.fault ? "bad-text" : "ok");
 
@@ -1053,6 +1053,12 @@ function setupInstall() {
   };
 }
 
+// "granted", "denied" or "prompt" (Chrome will ask). Browsers that cannot tell count as "prompt".
+async function midiPermission() {
+  try { return (await navigator.permissions.query({ name: "midi", sysex: true })).state; }
+  catch (e) { return "prompt"; }
+}
+
 async function start() {
   setupFolds();
   buildKnobs();
@@ -1080,12 +1086,17 @@ async function start() {
   armed($("resetBtn"), "Factory reset", () => { send(CMD.factoryReset); log("Factory reset"); });
 
   if (!navigator.requestMIDIAccess) { $("noMidi").classList.remove("hidden"); return; }
+  // First visit: say that Chrome is about to ask, so the prompt is not a surprise.
+  if (await midiPermission() === "prompt") $("midiAsk").classList.remove("hidden");
   try {
     midi = await navigator.requestMIDIAccess({ sysex: true });
   } catch (e) {
-    $("noMidi").textContent = "MIDI access was refused. Allow MIDI for this page in the browser's site settings.";
+    $("noMidi").textContent = "MIDI access was refused. In Chrome, click the icon left of the address, "
+                            + "allow MIDI devices, then reload the page.";
     $("noMidi").classList.remove("hidden");
     return;
+  } finally {
+    $("midiAsk").classList.add("hidden");
   }
   fillPicker();
   midi.onstatechange = () => {
@@ -1108,7 +1119,6 @@ class DemoController {
     this.settings.push(3, 127);                                             // feedback + DIN, speed
     for (let k = 0; k < 4; k++) this.settings.push(0, 20, 7, 100, 0);       // calibration
     this.knobs = [0, 1, 2, 3].map(k => ({ pos: 200 + k * 180, target: null, mode: 0, cc: 0, until: 0 }));
-    this.knobs[2].wear = 34;
     this.monitorUntil = 0;
     this.timer = setInterval(() => this.tick(), 50);
   }
@@ -1150,9 +1160,9 @@ class DemoController {
     if (t > this.monitorUntil) return;
     const status = [1, (this.lastIn && t - this.lastIn < 60 ? 1 : 0) | 2];
     this.knobs.forEach(n => {
-      const a = Math.round(n.pos + (n.wear || 0) / 2), b = Math.round(n.pos - (n.wear || 0) / 2);
+      const a = Math.round(n.pos), b = a;
       const target = n.target === null ? NO_TARGET : Math.round(n.target);
-      status.push(n.mode, 0, (n.wear ? 1 : 0) | 2, n.cc, ...split14(a), ...split14(b), ...split14(target));
+      status.push(n.mode, 0, 2, n.cc, ...split14(a), ...split14(b), ...split14(target));
     });
     this.sysex(REPLY.status, status);
   }
