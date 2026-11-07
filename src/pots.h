@@ -1,4 +1,5 @@
-// pots.h - reads both gangs of every motorised pot and keeps an eye on wear.
+// pots.h - reads the motorised pots. With READ_GANG_B (pins.h) it reads both gangs
+// and keeps an eye on wear; without it, gang A only and wiperB() just repeats wiperA().
 #pragma once
 #include "pins.h"
 

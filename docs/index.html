@@ -221,6 +221,8 @@
 
   /* ---------- maintenance ---------- */
   .maint { display: grid; grid-template-columns: 160px 1.4fr .8fr .6fr .6fr .9fr 1.5fr 130px; }
+  .maint.single { grid-template-columns: 160px 1.4fr .8fr .6fr 1.5fr 130px; }
+  .maint.single .gangB { display: none; }
   .maint > div { padding: 14px 12px 12px 0; border-bottom: 1px solid var(--faint); display: flex;
                  flex-direction: column; justify-content: center; gap: 6px; }
   .maint .head { padding-top: 10px; padding-bottom: 8px; }
@@ -287,7 +289,7 @@
     .mapping select.field { padding-right: 18px; background-position: calc(100% - 11px) 52%, calc(100% - 6px) 52%; }
     .savebar { flex-wrap: wrap; }
     .savebar .sync { flex-basis: 100%; }
-    .maint { grid-template-columns: 1fr 1fr; }
+    .maint, .maint.single { grid-template-columns: 1fr 1fr; }
     .maint .head { display: none; }
     .maint > div[data-label]::before { content: attr(data-label); font-size: var(--fs-micro);
                                        letter-spacing: var(--tr-caption); color: var(--dim); }
@@ -700,6 +702,7 @@ function showStatus(d) {
   setLamp("lampIn",  d[1] & 1); $("txtIn").textContent  = d[1] & 1 ? "Active" : "Idle";
 
   const t = performance.now();
+  $("maint").classList.toggle("single", !!(d[2 + 2] & 8));  // gang A only: hide Wiper B + Mismatch
   for (let k = 0; k < 4; k++) {
     const c = d.slice(2 + 10 * k, 12 + 10 * k);
     const mode = c[0], fault = c[1], worn = c[2] & 1, hasCC = c[2] & 2;
@@ -867,14 +870,14 @@ function buildMaintenance() {
   // data-label: on narrow screens the column heads are hidden and each cell shows its own label
   $("maint").innerHTML =
     ["Knob", "Cal range", "Polarity", "Wiper A", "Wiper B", "Mismatch", "Status", ""]
-      .map(h => `<div class="head">${h}</div>`).join("") +
+      .map(h => `<div class="head${h === "Wiper B" || h === "Mismatch" ? " gangB" : ""}">${h}</div>`).join("") +
     KNOB_NAMES.map((name, k) => `
       <div class="knobname"><small>0${k + 1}</small>${name}</div>
       <div data-label="Cal range"><span class="val num" id="mRange${k}">—</span><div class="range"><div id="mBar${k}"></div></div></div>
       <div class="val" data-label="Polarity" id="mDir${k}">—</div>
       <div class="val num" data-label="Wiper A" id="mA${k}">—</div>
-      <div class="val num" data-label="Wiper B" id="mB${k}">—</div>
-      <div class="val num" data-label="Mismatch" id="mDiff${k}">—</div>
+      <div class="val num gangB" data-label="Wiper B" id="mB${k}">—</div>
+      <div class="val num gangB" data-label="Mismatch" id="mDiff${k}">—</div>
       <div class="val" data-label="Status" id="mStatus${k}">—</div>
       <div><button class="quiet" id="mCal${k}" disabled>Calibrate</button></div>`).join("");
   KNOB_NAMES.forEach((name, k) => armed($(`mCal${k}`), "Calibrate", () => {
@@ -891,7 +894,7 @@ function renderMaintenance() {
     $(`mA${k}`).textContent = live ? h.a : "—";
     $(`mB${k}`).textContent = live ? h.b : "—";
     $(`mDiff${k}`).textContent = !live ? "—" : h.worn ? `${h.diff} · Wear` : h.diff;
-    $(`mDiff${k}`).className = "val num" + (h.worn ? " warn" : "");
+    $(`mDiff${k}`).className = "val num gangB" + (h.worn ? " warn" : "");
     $(`mStatus${k}`).textContent = !live ? "—" : h.fault ? FAULT_TEXT[h.fault] : "OK";
     $(`mStatus${k}`).className = "val " + (h.fault ? "bad-text" : "ok");
 

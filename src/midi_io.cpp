@@ -118,7 +118,8 @@ static void sendStatus() {
     int cc = knobLastCC(k), target = knobTarget(k);
     c[0] = knobState(k);
     c[1] = knobFault(k);
-    c[2] = (potWorn(k) ? 1 : 0) | (cc >= 0 ? 2 : 0) | (motorSpeed(k) != 0 ? 4 : 0);
+    c[2] = (potWorn(k) ? 1 : 0) | (cc >= 0 ? 2 : 0) | (motorSpeed(k) != 0 ? 4 : 0)
+         | (READ_GANG_B ? 0 : 8);  // bit 3: gang A only, no wiper B
     c[3] = cc >= 0 ? cc : 0;
     c[4] = hi7(wiperA(k)); c[5] = lo7(wiperA(k));
     c[6] = hi7(wiperB(k)); c[7] = lo7(wiperB(k));

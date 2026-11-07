@@ -28,7 +28,7 @@ void setupPots() {
   analogReadAveraging(4);
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {
     pots[k].a = analogRead(PIN_WIPER_A[k]);
-    pots[k].b = analogRead(PIN_WIPER_B[k]);
+    pots[k].b = READ_GANG_B ? analogRead(PIN_WIPER_B[k]) : pots[k].a;
   }
 }
 
@@ -37,6 +37,10 @@ void readPots() {
   for (uint8_t k = 0; k < NUM_KNOBS; k++) {
     Pot &p = pots[k];
     filterGang(p.a, p.glitchesA, analogRead(PIN_WIPER_A[k]));
+
+    // Gang A only: B copies A, so nothing to compare and no wear check.
+    if (!READ_GANG_B) { p.b = p.a; continue; }
+
     filterGang(p.b, p.glitchesB, analogRead(PIN_WIPER_B[k]));
 
     int diff = wiperMismatch(k);
@@ -73,8 +77,11 @@ void clearPotFaults() {
 
 int readPotSlow(uint8_t k) {
   long sum = 0;
-  for (int i = 0; i < 16; i++) sum += analogRead(PIN_WIPER_A[k]) + analogRead(PIN_WIPER_B[k]);
-  int value = sum / 32;
+  for (int i = 0; i < 16; i++) {
+    sum += analogRead(PIN_WIPER_A[k]);
+    if (READ_GANG_B) sum += analogRead(PIN_WIPER_B[k]);
+  }
+  int value = sum / (READ_GANG_B ? 32 : 16);
   pots[k].a = pots[k].b = value;  // resync the filters
   return value;
 }
