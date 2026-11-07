@@ -49,7 +49,7 @@ static void handleLine(char *line, void (*keepAlive)()) {
   bool knobAndValue = b && knob >= 0 && knob < NUM_KNOBS;
   bool changed = true;
 
-  if      (!strcmp(cmd, "status"))                  { printStatus(); changed = false; }
+  if      (!strcmp(cmd, "status"))                  { printStatus(); return; }   // printed once, not again below
   else if (!strcmp(cmd, "outch") && knobAndValue)   settings.outChannel[knob] = constrain(atoi(b), 1, 16);
   else if (!strcmp(cmd, "outcc") && knobAndValue)   settings.outCC[knob] = constrain(atoi(b), 0, 127);
   else if (!strcmp(cmd, "drivech") && knobAndValue) settings.driveChannel[knob] = constrain(atoi(b), 0, 16);
