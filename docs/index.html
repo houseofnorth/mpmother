@@ -315,7 +315,15 @@
 <!-- Shown while Chrome is about to ask for MIDI permission (first visit) -->
 <div class="notice info hidden" id="midiAsk"><span class="lamp on"></span>Chrome will ask for permission to use MIDI devices. Click Allow: without it the page cannot reach MPMOTHER.</div>
 
-<!-- Only shown when no port called MPMOTHER is found -->
+<!-- Shown while no MPMOTHER is plugged in -->
+<div class="notice info hidden" id="notFound"><span class="lamp"></span>MPMOTHER NOT FOUND.
+  Use a USB data cable (charge-only cables do not work), plug straight into the computer without a hub,
+  and check that MPMOTHER is listed in Audio MIDI Setup (Mac) or Device Manager (Windows).
+  <a href="#" id="otherPortLink">Other port…</a></div>
+<!-- Shown when a port answered, but not as MPMOTHER -->
+<div class="notice hidden" id="wrongDevice"></div>
+
+<!-- Manual port choice, only opened from "Other port…" (e.g. a renamed device) -->
 <section class="picker hidden" id="picker">
   <span class="label">MIDI input</span><select id="portIn"></select>
   <span class="label">MIDI output</span><select id="portOut"></select>
@@ -434,6 +442,8 @@ const $ = id => document.getElementById(id);
 let midi = null, input = null, output = null, demo = null;
 let settings = null;                  // last settings received from the controller
 let monitorTimer = null;
+let verified = false;                 // true once the device has answered hello as MPMOTHER
+let helloTimer = null;
 const history = KNOB_NAMES.map(() => []);   // per knob: [{t, pos, target, mode}]
 
 function log(text) {
@@ -944,6 +954,9 @@ function onMessage(bytes) {
   if (m[0] !== 0xF0 || !HEADER.every((b, i) => m[i] === b)) return;
   const reply = m[4], data = m.slice(5, -1);
   if (reply === REPLY.hello) {
+    verified = true;
+    clearTimeout(helloTimer);
+    setConnected("MPMOTHER");
     $("firmware").textContent = `${data[0]}.${data[1]}`;
     log(`Device found, firmware ${data[0]}.${data[1]}`);
   } else if (reply === REPLY.settings) {
@@ -983,29 +996,47 @@ function setConnected(name) {
   updateFaders();
   $("connectBtn").textContent = on ? "Disconnect" : "Connect";
   updateDemoButton();
+  // Only a device that answered hello is shown as online; until then it is "Checking".
   $("deviceName").textContent = name || "No device";
-  $("deviceState").textContent = on ? (demo ? "Demo" : "Online") : "Offline";
-  $("deviceState").className = "state" + (on ? " on" : "");
+  $("deviceState").textContent = !on ? "Offline" : !verified ? "Checking" : (demo ? "Demo" : "Online");
+  $("deviceState").className = "state" + (on && verified ? " on" : "");
 }
 
 function startSession(name) {
+  verified = false;
+  $("notFound").classList.add("hidden");
+  $("wrongDevice").classList.add("hidden");
   setConnected(name);
   send(CMD.hello);
+  // A port that never answers hello is not MPMOTHER (an audio interface, another controller):
+  // drop it instead of pretending it is online.
+  clearTimeout(helloTimer);
+  helloTimer = setTimeout(() => {
+    if (verified || !connected()) return;
+    const port = output ? output.name : name;
+    disconnect();
+    $("wrongDevice").textContent = `${port} did not answer as MPMOTHER. Pick another port, or check the cable.`;
+    $("wrongDevice").classList.remove("hidden");
+    log(`${port} is not MPMOTHER`);
+  }, 1500);
   send(CMD.getSettings);
   send(CMD.monitor);
   monitorTimer = setInterval(() => send(CMD.monitor), 2000);  // keeps the status stream alive
 }
 
+// Connects to the port named MPMOTHER. Other ports are only used when picked by hand
+// in the "Other port…" picker, and even then must answer hello before showing as online.
 function connect() {
   if (!midi) return;
-  input  = findPort(midi.inputs)  || midi.inputs.get($("portIn").value);
-  output = findPort(midi.outputs) || midi.outputs.get($("portOut").value);
+  const manual = !$("picker").classList.contains("hidden");
+  input  = manual ? midi.inputs.get($("portIn").value)   : findPort(midi.inputs);
+  output = manual ? midi.outputs.get($("portOut").value) : findPort(midi.outputs);
   if (!input || !output) {
-    $("picker").classList.remove("hidden");
-    log("No MPMOTHER found. Pick the MIDI ports above.");
+    input = output = null;
+    $("notFound").classList.remove("hidden");
+    log("No MPMOTHER found");
     return;
   }
-  $("picker").classList.add("hidden");
   input.onmidimessage = e => onMessage(e.data);
   log(`Connected to ${output.name}`);
   startSession(output.name);
@@ -1014,6 +1045,8 @@ function connect() {
 function disconnect() {
   stopDemoMotion();
   clearInterval(monitorTimer);
+  clearTimeout(helloTimer);
+  verified = false;
   if (input) input.onmidimessage = null;
   if (demo) demo.stop();
   input = output = demo = null;
@@ -1084,6 +1117,11 @@ async function start() {
   $("viewBtn").onclick = () => { location.hash = location.hash === "#settings" ? "#monitor" : "#settings"; };
   requestAnimationFrame(animate);
   $("connectBtn").onclick = () => (connected() ? disconnect() : connect());
+  $("otherPortLink").onclick = e => {
+    e.preventDefault();
+    $("picker").classList.toggle("hidden");
+    $("otherPortLink").textContent = $("picker").classList.contains("hidden") ? "Other port…" : "Hide port choice";
+  };
   // Demo: with a real device, random moves on the real knobs. Without one, a simulated device.
   // Pressing it again stops either.
   $("demoBtn").onclick = () => {
@@ -1119,7 +1157,7 @@ async function start() {
     if (!connected() && findPort(midi.outputs)) connect();  // plugged in while the page is open
   };
   if (findPort(midi.outputs)) connect();
-  else log("Waiting for MPMOTHER. Plug it in, or try the demo.");
+  else { $("notFound").classList.remove("hidden"); log("Waiting for MPMOTHER. Plug it in, or try the demo."); }
 }
 
 // ===========================================================================
