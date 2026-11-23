@@ -2,6 +2,8 @@
 
 House of North 2026
 
+**Config tool: <https://houseofnorth.github.io/mpmother/>**
+
 ![The MPMOTHER config tool: the four knobs live, laid out like the front panel](media/config-tool.png)
 
 | Knob | Name     | MIDI Out (default) | MIDI In (default) |
@@ -12,7 +14,15 @@ House of North 2026
 | 4    | SHADOW   | ch 1, CC 23        | ch 2, CC 23       |
 
 MIDI Out is what a knob sends, MIDI In is what moves it. Every knob has its own channel and CC
-for both, set in the config tool.
+for both, set in the [config tool](https://houseofnorth.github.io/mpmother/).
+
+## Connections
+
+- **USB:** MIDI in and out, the config tool, firmware upload. USB powers the Teensy only.
+- **5 V DC in:** powers the motors. **On USB alone the motors don't move.** Use 5 V, 3–4 A, centre-positive; check polarity before plugging in.
+  USB and 5 V can be connected at the same time.
+- **5-pin DIN MIDI:** **out only**. It mirrors MIDI Out; there is no DIN MIDI in, so the knobs
+  can only be moved over USB. Turn it off with the text command `din off`.
 
 ## Using it with Ableton Live
 
